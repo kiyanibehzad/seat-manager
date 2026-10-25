@@ -1,0 +1,34 @@
+# Local configuration and private runtime data
+/.env
+/.env.*
+/config/local.php
+/config/*.local.php
+/storage/**
+!/storage/.gitkeep
+/work/
+/proof/
+
+# Local review evidence, generated output and private font copies
+/frontend/proof/
+/frontend/build/
+/frontend/preview-assets/
+/frontend/local-fonts/
+/public_html/assets/
+/public_html/index.html
+/frontend/*HANDOFF.md
+/frontend/*QA.md
+/frontend/STYLE-COVERAGE.md
+/frontend/README.md
+/frontend/style-coverage*.json
+/docs/backend/STAGE*-REPORT.fa.md
+/docs/backend/READINESS.md
+/docs/backend/INSTALL.md
+/docs/backend/INTEGRATION.md
+
+# Installed dependencies and generated archives
+/backend/vendor/
+/frontend/node_modules/
+/dist/
+*.zip
+*.log
+.DS_Store

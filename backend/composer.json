@@ -1,0 +1,8 @@
+{
+  "name": "internal/openai-acc-manager-backend",
+  "description": "Shared hosting PHP backend",
+  "type": "project",
+  "require": {"php": ">=8.3", "ext-pdo": "*", "ext-pdo_mysql": "*", "ext-openssl": "*", "ext-mbstring": "*", "phpmailer/phpmailer": "^7.0"},
+  "config": {"platform": {"php": "8.3.0"}, "sort-packages": true},
+  "autoload": {"psr-4": {"AccManager\\": "src/"}}
+}
