@@ -1,4 +1,5 @@
-import {APP_NAME,APP_TAGLINE,pageTitle} from './brand.js';
+import {pageTitle} from './brand.js';
+import {footerMarkup} from './footer.js';
 import { authMarkup, sessionMarkup, brandMarkup, themeMarkup, notificationSlotMarkup } from './auth-view.js';
 import { mountNotifications } from './notification-controller.js';
 
@@ -13,7 +14,7 @@ export function mountAuth({ root, api, mailAction=null, initialScreen='login', n
   let disposed=false;
   let sessionCleanup=null;
 
-  root.innerHTML=`<header class="app-header">${brandMarkup()}<div class="header-tools">${notificationSlotMarkup()}${themeMarkup()}</div></header><main id="main-content"><section class="auth-stage" aria-label="دسترسی به حساب"></section></main><footer class="app-footer"><span>${APP_NAME}</span><span>${APP_TAGLINE}</span></footer>`;
+  root.innerHTML=`<header class="app-header">${brandMarkup()}<div class="header-tools">${notificationSlotMarkup()}${themeMarkup()}</div></header><main id="main-content"><section class="auth-stage" aria-label="دسترسی به حساب"></section></main>${footerMarkup()}`;
   const stage=root.querySelector('.auth-stage');
   const notifications=mountNotifications({slot:root.querySelector('[data-notification-slot]'),api,baseUrl,navigation:notificationNavigation});
   const unsubscribeSession=api.subscribeSession(session=>{

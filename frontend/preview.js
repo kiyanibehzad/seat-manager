@@ -1,4 +1,4 @@
-import {APP_NAME,APP_TAGLINE} from './src/brand.js';
+import {footerMarkup} from './src/footer.js';
 import { authMarkup, sessionMarkup, brandMarkup, themeMarkup } from './src/auth-view.js';
 import { mountTheme } from './src/theme.js';
 
@@ -33,7 +33,7 @@ function render(key){
   const [, ,state]=cases.find(item=>item[0]===key) || cases[0];
   select.value=key;
   const content=state.screen==='session'?sessionMarkup({user:{first_name:'نام',last_name:'کاربر',email:'employee@example.com',app_role:'user'},permissions:['personal.read','personal.request']}):authMarkup({...state,values:{}});
-  root.innerHTML=`<header class="app-header">${brandMarkup()}<div class="header-tools">${themeMarkup()}</div></header><main id="main-content"><section class="${state.screen==='session'?'session-container':'auth-stage'}" aria-label="پیش‌نمایش صفحه">${content}</section></main><footer class="app-footer"><span>${APP_NAME}</span><span>${APP_TAGLINE}</span></footer>`;
+  root.innerHTML=`<header class="app-header">${brandMarkup()}<div class="header-tools">${themeMarkup()}</div></header><main id="main-content"><section class="${state.screen==='session'?'session-container':'auth-stage'}" aria-label="پیش‌نمایش صفحه">${content}</section></main>${footerMarkup()}`;
   theme.sync();
   if(state.error){const error=root.querySelector('[data-form-error]');error.hidden=false;error.textContent=state.error;if(state.field)root.querySelector(`[name="${state.field}"]`)?.setAttribute('aria-invalid','true');}
   if(state.loading){const form=root.querySelector('form');form.setAttribute('aria-busy','true');for(const input of form.elements)input.disabled=true;form.querySelector('[data-form-status]').textContent=state.loading;}

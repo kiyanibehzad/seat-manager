@@ -1,5 +1,6 @@
 export const APP_NAME = 'Seat Manager';
 export const APP_TAGLINE = 'مدیریت حساب‌ها و سیت‌ها';
+export const APP_VERSION = '0.1.0';
 
 const icon = new URL('./brand/icon.svg', import.meta.url);
 const version = new URL(import.meta.url).searchParams.get('v');
