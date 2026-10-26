@@ -68,6 +68,17 @@ test('permission-based navigation preserves personal pages for every role and bl
   const base='https://example.test/team/';assert.equal(notificationRoute(base+'#view=operations&request=501',base,testPermissions('user')),null);const own=notificationRoute(base+'#view=my-requests&renew_account=102',base,testPermissions('user'));assert.equal(own.renewId,102);assert.equal(own.page,'requests');assert.equal(notificationRoute('https://outside.test/#view=my-accounts',base,testPermissions('admin')),null);
   assert.equal(routeFromUrl(base+'?view=finance',testPermissions('hr')).page,'accounts');assert(routeUrl(base,{page:'seats',day:'tomorrow',operationId:7}).includes('operation=7'));
 });
+test('header context switch keeps permission-based workspaces and a single section navigation',()=>{
+  for(const role of ['admin','hr','operator','user','reviewer','people']){
+    const permissions=testPermissions(role),allowed=view.pagePermissions(permissions),management=allowed.filter(key=>!['accounts','requests'].includes(key));
+    for(const page of allowed){
+      const context=view.panelContext({page},permissions),navigation=view.panelNavigation({page},permissions),switcher=view.workspaceMarkup({page},permissions);
+      assert.equal(context.workspace,['accounts','requests'].includes(page)?'personal':'management');assert.equal((navigation.match(/<nav /g)||[]).length,1);assert(!navigation.includes('sm-workspace-nav'));assert(navigation.includes(`data-id="${page}" aria-current="page"`));
+      for(const candidate of allowed)assert.equal(navigation.includes(`data-id="${candidate}"`),(['accounts','requests'].includes(candidate))===(context.workspace==='personal'));
+      if(management.length){assert(switcher.includes('aria-haspopup="menu"'));assert.equal((switcher.match(/role="menuitemradio"/g)||[]).length,2);assert(switcher.includes(`data-workspace="${context.workspace}" aria-checked="true"`));}else assert.equal(switcher,'');
+    }
+  }
+});
 test('corporate email is omitted from employee list until details expand',()=>{
   const f=fixtures(),html=view.usersView({users:f.users,departments:f.departments});assert(!html.includes(f.users[0].email));assert(html.includes('class="sm-num">۴</bdi>'));assert(html.includes('class="sm-num">۵</bdi>'));assert(view.usersView({users:f.users,departments:f.departments,expanded:1}).includes(f.users[0].email));
   const locked={...accountModel(f.request.account),locked:true};for(const selected of [null,locked]){const html=view.personalAccountsView({accounts:[locked],requests:[],user:f.users[0],selected});assert(!html.includes('data-op-action="seat-request"'));assert(!html.includes('data-op-action="renew-request"'));assert(html.includes('در حال رسیدگی'));}assert(view.personalAccountsView({accounts:[locked],requests:[requestModel({...f.request,status:'ongoing'})],user:f.users[0]}).includes('data-op-action="personal-request"'));

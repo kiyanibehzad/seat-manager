@@ -72,11 +72,21 @@
 .palette-panel input{margin:0;width:15px;height:15px;accent-color:var(--accent);flex:none}
 .palette-panel .palette-pair i{width:20px;height:12px}
 .acc-operations .sm-product,.acc-operations .sm-content{background:var(--canvas)}
-.acc-operations .sm-product .sm-workspace-nav,.acc-operations .sm-product .sm-role-nav{background:var(--surface);border-bottom:1px solid var(--line);padding:8px 24px;gap:6px;flex-wrap:wrap}
-.acc-operations .sm-product .sm-role-nav>button{padding:7px 12px;min-height:40px;border:0;border-radius:7px;color:var(--muted);font-weight:500}
-.acc-operations .sm-product .sm-role-nav>button[aria-current="page"],.acc-operations .sm-product .sm-workspace-button[aria-pressed="true"]{background:var(--accent-soft);color:var(--accent-text);box-shadow:none;border-color:transparent}
-.acc-operations .sm-product .sm-role-nav>button:hover,.acc-operations .sm-product .sm-workspace-button:hover{background:var(--accent-soft);color:var(--accent-text)}
-.acc-operations .sm-product .sm-workspace-button{min-height:34px;border-radius:6px;border-color:transparent}
+.app-header-context{display:flex;align-items:center;gap:18px;min-width:0;max-width:100%;flex-wrap:wrap}
+.workspace-control{position:relative;z-index:70;flex:none}
+.workspace-trigger{display:flex;align-items:center;justify-content:space-between;gap:14px;min-height:38px;min-width:112px;padding:6px 11px;border:1px solid var(--line);border-radius:8px;background:var(--raised);color:var(--text);font-size:13px;font-weight:500;white-space:nowrap}
+.workspace-chevron{color:var(--muted)}
+.workspace-trigger:hover,.workspace-trigger[aria-expanded="true"]{background:var(--accent-soft);border-color:var(--accent)}
+.workspace-menu{position:absolute;inset-block-start:calc(100% + 10px);inset-inline-start:0;min-width:172px;max-width:calc(100vw - 32px);padding:6px;border:1px solid var(--line);border-radius:10px;background:var(--surface);box-shadow:0 8px 28px #00000024}
+.workspace-menu>button{display:flex;align-items:center;justify-content:space-between;gap:16px;min-height:40px;width:100%;padding:8px 10px;border:0;border-radius:6px;background:transparent;color:var(--text);text-align:start;font-size:13px;white-space:nowrap}
+.workspace-check{visibility:hidden;color:var(--accent-text)}
+.workspace-menu>button[aria-checked="true"]{background:var(--accent-soft);color:var(--accent-text)}
+.workspace-menu>button[aria-checked="true"] .workspace-check{visibility:visible}
+.workspace-menu>button:hover{background:var(--hover)}
+.acc-operations .sm-product .sm-role-nav{background:var(--raised);border-bottom:1px solid var(--line);padding:6px 24px;gap:6px;flex-wrap:wrap;box-shadow:none}
+.acc-operations .sm-product .sm-role-nav>button{padding:6px 12px;min-height:36px;border:1px solid transparent;border-radius:7px;color:var(--muted);font-weight:500}
+.acc-operations .sm-product .sm-role-nav>button[aria-current="page"]{background:var(--surface);color:var(--accent-text);font-weight:700;box-shadow:0 1px 2px #0000000a;border-color:var(--line)}
+.acc-operations .sm-product .sm-role-nav>button:hover{background:var(--surface);color:var(--accent-text)}
 .acc-operations .sm-titlebar{border-inline-start:3px solid var(--companion);padding-inline-start:12px}
 .auth-heading{border-inline-start:3px solid var(--companion);padding-inline-start:16px}
 .acc-operations .sm-product .sm-worklist-capacity{display:grid;gap:6px;width:284px;max-width:100%;background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:9px 10px}
@@ -107,10 +117,10 @@
   .app-header .header-tools{gap:10px;max-width:100%;flex-wrap:wrap;justify-content:flex-start}
   .appearance-controls{gap:8px}
   .palette-trigger{font-size:12px}
-  .acc-operations .sm-product .sm-role-nav,.acc-operations .sm-product .sm-workspace-nav{padding-inline:12px}
+  .app-header-context{gap:12px}.acc-operations .sm-product .sm-role-nav{padding-inline:12px}
   .acc-operations .sm-product .sm-role-nav>button{padding-inline:9px;font-size:13px}
 }
 @media(max-width:420px){.appearance-controls{width:100%}.palette-trigger{padding-inline:8px}.theme-control{width:150px}.palette-panel{font-size:13px}}
-@media(pointer:coarse){.palette-trigger,.palette-panel label{min-height:44px}}
+@media(pointer:coarse){.palette-trigger,.palette-panel label,.workspace-trigger,.workspace-menu>button,.acc-operations .sm-product .sm-role-nav>button{min-height:44px}}
 
 @media(prefers-contrast:more){:root{--line:light-dark(#8794a5,#8795a8);--muted:light-dark(#3d495b,#d3dbe6)}}

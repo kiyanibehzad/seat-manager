@@ -25,6 +25,35 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   document.addEventListener('pointerdown',event=>{if(!profile.contains(event.target))profileClose();},{signal:lifecycle.signal});
   document.addEventListener('focusin',event=>{if(!profile.contains(event.target))profileClose();},{signal:lifecycle.signal});
   document.addEventListener('keydown',event=>{if(event.key==='Escape')profileClose();},{signal:lifecycle.signal});
+  const headerBrand=document.querySelector('.app-header .brand'),workspaceMarkup=views.workspaceMarkup(route,permissions);
+  let headerContext=null,workspaceControl=null;
+  if(headerBrand&&workspaceMarkup){
+    headerContext=document.createElement('div');headerContext.className='app-header-context';headerBrand.before(headerContext);headerContext.appendChild(headerBrand);
+    workspaceControl=document.createElement('div');workspaceControl.className='workspace-control';workspaceControl.innerHTML=workspaceMarkup;headerContext.appendChild(workspaceControl);
+    const trigger=workspaceControl.querySelector('[data-workspace-toggle]'),menu=workspaceControl.querySelector('[role="menu"]'),items=Array.from(menu.querySelectorAll('[data-workspace]'));
+    const close=(restore=false)=>{menu.hidden=true;trigger.setAttribute('aria-expanded','false');if(restore)trigger.focus({preventScroll:true});};
+    const open=(index=null)=>{menu.hidden=false;trigger.setAttribute('aria-expanded','true');(items[index]||items.find(item=>item.getAttribute('aria-checked')==='true')||items[0]).focus({preventScroll:true});};
+    workspaceControl.addEventListener('click',event=>{
+      if(event.target.closest('[data-workspace-toggle]')){if(menu.hidden)open();else close();return;}
+      const item=event.target.closest('[data-workspace]');if(!item||writing)return;close(true);
+      const {workspace,management,personal}=views.panelContext(route,permissions),next=item.dataset.workspace;if(next===workspace)return;
+      routeTo({page:next==='personal'?personal[0]:management[0]});
+    },{signal:lifecycle.signal});
+    workspaceControl.addEventListener('keydown',event=>{
+      if(event.key==='Escape'&&!menu.hidden){event.preventDefault();event.stopPropagation();close(true);return;}
+      if(event.target===trigger&&['ArrowDown','ArrowUp'].includes(event.key)){event.preventDefault();open(event.key==='ArrowDown'?0:items.length-1);return;}
+      const index=items.indexOf(event.target);if(index<0)return;
+      const next=event.key==='ArrowDown'?(index+1)%items.length:event.key==='ArrowUp'?(index+items.length-1)%items.length:event.key==='Home'?0:event.key==='End'?items.length-1:null;
+      if(next!==null){event.preventDefault();items[next].focus();}else if(event.key==='Tab')close();
+    },{signal:lifecycle.signal});
+    document.addEventListener('pointerdown',event=>{if(!workspaceControl.contains(event.target))close();},{signal:lifecycle.signal});
+    document.addEventListener('focusin',event=>{if(!workspaceControl.contains(event.target))close();},{signal:lifecycle.signal});
+  }
+  function syncWorkspace(){
+    if(!workspaceControl)return;const {workspace}=views.panelContext(route,permissions),label=workspace==='personal'?'حساب‌های من':'مدیریت';
+    workspaceControl.querySelector('[data-workspace-label]').textContent=label;workspaceControl.querySelector('[data-workspace-toggle]').setAttribute('aria-label','فضای کاری: '+label);
+    for(const item of workspaceControl.querySelectorAll('[data-workspace]'))item.setAttribute('aria-checked',String(item.dataset.workspace===workspace));
+  }
   function notify(message,error=false){notice.hidden=!message;notice.textContent=message;notice.classList.toggle('sm-error',error);}
   function requirePermission(permission){if(!can(permission))throw new ApiError('forbidden','دسترسی این کار را ندارید.',{},403);}
   const ownAccount=id=>(data.accounts||[]).find(a=>a.id===Number(id));
@@ -36,7 +65,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     const anchorTop=anchor?.getBoundingClientRect().top,contentHeight=anchor?content.getBoundingClientRect().height:null;
     content.style.minHeight=contentHeight===null?'':contentHeight+'px';
     const sequence=++loadSequence;loadAbort?.abort();loadAbort=new AbortController();const signal=loadAbort.signal;picker.close(false);form=null;context=null;data={};reasonDraft=null;notify('');
-    root.querySelector('[data-op-navigation]').innerHTML=views.panelNavigation(route,permissions);content.innerHTML=heading(views.pageTitles[route.page]||'')+'<p class="sm-small" role="status">در حال دریافت اطلاعات…</p>';updateTitle();
+    syncWorkspace();root.querySelector('[data-op-navigation]').innerHTML=views.panelNavigation(route,permissions);content.innerHTML=heading(views.pageTitles[route.page]||'')+'<p class="sm-small" role="status">در حال دریافت اطلاعات…</p>';updateTitle();
     try{
       let result={};
       if(route.denied||!views.pagePermissions(permissions).includes(route.page)||(!['accounts','requests'].includes(route.page)&&(route.requestId||route.operationId||route.accountId)&&!can('seats.manage')))throw new ApiError('forbidden','دسترسی این بخش را ندارید.');
@@ -152,7 +181,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   function reasonRows(f=content.querySelector('[data-op-form="reasons"]')){return Array.from(f?.querySelectorAll('[data-reason-code]')||[]).map(row=>({code:row.dataset.reasonCode,label:row.querySelector('input').value.trim()}));}
   async function click(event){const b=event.target.closest('[data-op-action]');if(!b||!root.contains(b)||writing)return;const action=b.dataset.opAction,id=b.dataset.id;
     try{
-      if(action==='navigate')routeTo({page:id});else if(action==='workspace')routeTo({page:id==='personal'?'accounts':views.pagePermissions(permissions).find(p=>!['accounts','requests'].includes(p))});
+      if(action==='navigate')routeTo({page:id});
       else if(action==='reload')void load();else if(action==='back')routeTo(previous.pop()||{page:route.page,tab:route.tab,day:route.day},{remember:false});
       else if(action==='daily-tab')routeTo({page:'overview',day:id},{remember:false});else if(action==='seat-tab')routeTo({page:'seats',tab:id});
       else if(action==='personal-request'||action==='admin-request')routeTo({page:action==='personal-request'?'requests':'seats',requestId:objectId(id),day:route.day,tab:route.tab});
@@ -187,5 +216,5 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   root.addEventListener('input',event=>{if(event.target.closest('[data-bulk-row]')){bulkPreview=null;content.querySelector('[data-op-action="bulk-commit"]')?.remove();const status=content.querySelector('[data-bulk-preview-status]');if(status)status.textContent='ردیف تغییر کرد؛ دوباره بررسی کنید.';}},{signal:lifecycle.signal});
   root.addEventListener('paste',event=>{if(!event.target.matches('[data-bulk-paste]'))return;event.preventDefault();bulkRows=parsePastedUsers(event.clipboardData.getData('text'),data.departments);bulkPreview=null;render();},{signal:lifecycle.signal});
   void load();
-  return {navigate:next=>routeTo(next),destroy(){destroyed=true;++loadSequence;loadAbort?.abort();lifecycle.abort();picker.destroy();profile.remove();uncertain=null;data={};bulkRows=[];bulkPreview=null;reasonDraft=null;}};
+  return {navigate:next=>routeTo(next),destroy(){destroyed=true;++loadSequence;loadAbort?.abort();lifecycle.abort();picker.destroy();profile.remove();if(headerContext)headerContext.replaceWith(headerBrand);uncertain=null;data={};bulkRows=[];bulkPreview=null;reasonDraft=null;}};
 }
