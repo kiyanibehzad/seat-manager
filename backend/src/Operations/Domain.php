@@ -87,7 +87,7 @@ final class Domain
     }
     public function managers(string $key,string $type,string $title,string $body,string $url): void
     {
-        foreach ($this->app->db->all("SELECT id FROM users WHERE app_role IN ('admin','operator') AND is_active=1 AND approval_status='approved' AND email_verified_at IS NOT NULL") as $row) { $this->app->events->notify((int)$row['id'],$key,$type,$title,$body,$url); }
+        foreach ($this->app->auth->recipients('seats.manage') as $recipient) { $this->app->events->notify((int)$recipient,$key,$type,$title,$body,$url); }
     }
     public function apply(array $account,array $state,int $actor,string $action,string $reason,string $evidence,string $observed,?int $operation=null,?int $request=null): array
     {

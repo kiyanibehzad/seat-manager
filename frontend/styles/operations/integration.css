@@ -100,3 +100,10 @@
   .acc-operations .sm-detail > .sm-form-grid > .sm-field { min-width:0; width:100%; max-width:360px; }
   .acc-operations .sm-detail > .sm-form-grid > .sm-field:has(select[data-transfer-field="source"]) { max-width:744px; }
   .acc-operations .sm-case-action-controls .sm-form-grid:has(> .sm-field:only-child) { max-width:360px; grid-template-columns:minmax(0,1fr); }
+
+/* Five simple capabilities, kept separate from organizational scoring fields. */
+.acc-operations .op-access-capabilities{display:grid;grid-template-columns:minmax(0,1fr);gap:12px;min-width:0;margin:0}
+.acc-operations .op-access-capabilities .sm-check{margin:0;align-items:flex-start}
+.acc-operations .op-access-capabilities legend{padding-inline:6px}
+.acc-operations .op-access-summary{display:flex;flex-wrap:wrap;gap:6px 12px;line-height:1.9}
+.acc-operations .op-access-summary>span{display:inline-block}

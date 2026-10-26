@@ -20,6 +20,7 @@ final class Migrator
                 $db->run('INSERT INTO schema_migrations(version,checksum) VALUES(?,?)',[$version,$checksum]); $applied[]=$version;
             }
         } finally { $db->one('SELECT RELEASE_LOCK(?) released',[$lock]); }
+        $this->app->accessGroups->refreshSchema();
         return $applied;
     }
 }

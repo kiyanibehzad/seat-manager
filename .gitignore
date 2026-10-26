@@ -15,14 +15,14 @@
 /frontend/local-fonts/
 /public_html/assets/
 /public_html/index.html
+/public_html/install.html
 /frontend/*HANDOFF.md
 /frontend/*QA.md
 /frontend/STYLE-COVERAGE.md
 /frontend/README.md
 /frontend/style-coverage*.json
-/docs/backend/STAGE*-REPORT.fa.md
+/docs/backend/*REPORT.fa.md
 /docs/backend/READINESS.md
-/docs/backend/INSTALL.md
 /docs/backend/INTEGRATION.md
 
 # Installed dependencies and generated archives

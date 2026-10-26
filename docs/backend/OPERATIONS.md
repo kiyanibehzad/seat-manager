@@ -37,3 +37,10 @@ complete به تأیید تازهٔ همهٔ حساب‌ها با email/owner/ve
 ## قواعد اجرا و حفظ داده
 
 migration 001 ثابت مانده است؛ 002 فقط جدول/setting جدید اضافه می‌کند. پیش از اعمال روی dev، backup خصوصی تهیه و hash تمام کاربران قبل/بعد مقایسه شد. استقرار عمومی، SMTP واقعی و اتصال خودکار OpenAI در این مرحله انجام نشده‌اند. پایگاه dev و حساب انسانی حفظ شده‌اند. تست‌های run.php و operations.php فقط acc_manager_test را reset می‌کنند و فیکسچر مرورگر را جایگزین خواهند کرد؛ هنگام QA اجرا نشوند.
+
+
+## گروه‌ها و ابطال دسترسی
+
+بعد از migration 003، Auth.permissions و گیرندگان مدیریتی از access_group واقعی خوانده می‌شوند. registration.ready نیازمند registrations.review و request.created/expiry.action_required نیازمند seats.manage است. گروه user همیشه شخصی‌فقط است. تغییر نام/قابلیت گروه و انتساب، auth_version اعضا/فرد را در همان transaction افزایش می‌دهد؛ عملیات قدیمی با actor stale پیش از mutation رد می‌شوند. تغییر گروه روی department/position/special_priority و امتیاز صف اثر ندارد.
+
+اعلان مدیریتی required_permission دارد؛ پس از لغو قابلیت، در فهرست، unread count و علامت‌گذاری فرد پنهان است. MailWorker پیش از SMTP مجوز را تازه می‌سنجد و پیام نامجاز را با کد ثابت permission_revoked لغو و payload را پاک می‌کند. پیام مدیریتیِ قدیمیِ فاقد metadata از notification متناظر تشخیص داده می‌شود؛ تطبیق legacy فقط برای category=event است. ایمیل auth/رمز اولیه و payloadهای تازه وارد تطبیق متن نمی‌شوند؛ توکن/رمز در query تطبیق legacy قرار نمی‌گیرد. اعلان‌های شخصی همچنان برای صاحب خودشان می‌مانند. ارسال از قبل شروع‌شده، همانند درخواست خواندن در حال اجرا، با تغییر مجوز قابل پس‌گرفتن نیست؛ هیچ SMTP در transaction قفل هویت انجام نمی‌شود.

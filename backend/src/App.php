@@ -8,6 +8,7 @@ final class App
     public MailQueue $mail;
     public Events $events;
     public Auth $auth;
+    public AccessGroups $accessGroups;
     public People $people;
     public string $requestId;
     public function __construct(public string $root, public array $config)
@@ -17,6 +18,7 @@ final class App
         $this->crypto = new Crypto($config['app_key']);
         $this->mail = new MailQueue($this);
         $this->events = new Events($this);
+        $this->accessGroups = new AccessGroups($this);
         $this->auth = new Auth($this);
         $this->people = new People($this);
     }

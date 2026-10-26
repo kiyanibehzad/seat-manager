@@ -108,3 +108,8 @@ Timestampهای سوابق: `history.items[].recorded_at` زمان ثبت برن
 نمونهٔ فیلدهای مربوط: `{"status":"ongoing","operation_phase":"waiting_invite","eta":{"rank":null,"estimated_at":null,"conditional":false,"reason":"منتظر پذیرش دعوت و بررسی عضویت و سیت همین حساب در OpenAI توسط مدیر است."}}`. رابط می‌تواند برچسب «منتظر پذیرش دعوت» را با این enum نشان دهد؛ پذیرش دعوت/ثبت سیت هنوز تأیید نشده است. فازهای working/partial/scheduled هم توضیح ETA متناسب و بدون تاریخ ساختگی دارند.
 
 این افزوده در فهرست و جزئیات شخصی یکسان است و operation کامل، شناسه/هویت/ایمیل طرف دیگر انتقال یا دلیل داخلی مدیر را به پاسخ شخصی اضافه نمی‌کند. فیلد مدیریتی کارکنان `GET /admin/users → data.items[].score` در API.md تعریف شده است.
+
+
+## نگاشت قابلیت‌های گروه
+
+گروه واقعی، مرجع مجوز پس از migration 003 است: GET /admin/dashboard به `dashboard.read` نیاز دارد؛ مدیریت سیت/درخواست و سوابق عملیاتی به `seats.manage` وابسته‌اند و `requests.manage`/`capacity.read` از آن مشتق می‌شوند. dashboard.read به seats.manage نیاز دارد تا همهٔ لینک‌های رسیدگی قابل استفاده باشند. تأیید/رد ثبت‌نام، `registrations.review` جداست؛ اپراتور اولیه آن را دارد و people.manage ندارد. مالی، نوشتن ظرفیت و تنظیمات همچنان فقط مدیر کل‌اند. بخش سازمانی و امتیاز صف از گروه مستقل می‌مانند. جزئیات checkboxها و وابستگی مدیریت بخش/امتیاز در ACCESS-GROUPS-CONTRACT.md است.

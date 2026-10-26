@@ -2,8 +2,8 @@
 declare(strict_types=1);
 ini_set('display_errors','0'); ini_set('zend.exception_ignore_args','1');
 try {
- $root=dirname(__DIR__,2); putenv('ACC_CONFIG='.$root.'/storage/run/test-config.php'); $app=require $root.'/backend/bootstrap.php';
- if ($app->config['environment']!=='test'||$app->db->one('SELECT DATABASE() n')['n']!=='acc_manager_test') { exit(1); }
+ $root=dirname(__DIR__,2); require __DIR__.'/OperationsSupport.php'; configureTestEnvironment($root); $app=require $root.'/backend/bootstrap.php';
+ testDatabaseGuard($app);
  $input=json_decode(stream_get_contents(STDIN),true,32,JSON_THROW_ON_ERROR); $actor=$app->auth->user((int)$input['actor']);
  $barrier=null;
  if (isset($input['barrier'])&&is_string($input['barrier'])&&preg_match('/^capacity-race-[a-f0-9]{12}$/D',$input['barrier'])) {

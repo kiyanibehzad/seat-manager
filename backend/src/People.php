@@ -36,7 +36,7 @@ final class People
     {
         // Profile fields and derived score come from one joined statement snapshot.
         // A registration without an assigned department has no base score yet.
-        $sql="SELECT CASE WHEN d.id IS NULL THEN NULL ELSE d.base_score + (u.organizational_position='supervisor') + u.special_priority END score, ".substr(Auth::USER_SELECT,strlen('SELECT '));
+        $sql="SELECT CASE WHEN d.id IS NULL THEN NULL ELSE d.base_score + (u.organizational_position='supervisor') + u.special_priority END score, ".substr($this->app->auth->userSelect(),strlen('SELECT '));
         return array_map(function (array $row): array {
             $user=$this->app->auth->publicUser($row);
             $user['score']=$row['score']===null?null:(int)$row['score'];
@@ -44,7 +44,7 @@ final class People
         },$this->app->db->all($sql.' ORDER BY u.id DESC LIMIT 500'));
     }
     public function registrations(): array
-    { return array_map($this->app->auth->publicUser(...),$this->app->db->all(Auth::USER_SELECT." WHERE u.approval_status='pending_approval' AND u.email_verified_at IS NOT NULL ORDER BY u.id LIMIT 500")); }
+    { return array_map($this->app->auth->publicUser(...),$this->app->db->all($this->app->auth->userSelect()." WHERE u.approval_status='pending_approval' AND u.email_verified_at IS NOT NULL ORDER BY u.id LIMIT 500")); }
     public function create(array $data,array $actor): array
     {
         Input::only($data,['email','first_name','last_name','department_id','organizational_position','employee_number','initial_openai_email']);
@@ -56,6 +56,7 @@ final class People
             $password=bin2hex(random_bytes(12));
             $this->app->db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,employee_number,email_verified_at,approval_status,approved_by,approved_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP(),'approved',?,UTC_TIMESTAMP())",[$email,password_hash($password,PASSWORD_DEFAULT),$first,$last,$department,$position,$employee,$fresh['id']]);
             $id=(int)$this->app->db->pdo->lastInsertId();
+            $this->app->accessGroups->initializeUser($id);
             if ($initial!==null) {
                 $domain=new \AccManager\Operations\Domain($this->app); $domain->lock();
                 (new \AccManager\Operations\Accounts($domain))->createInTx($id,$initial);
@@ -68,10 +69,11 @@ final class People
     public function approve(array $data,array $actor): array
     {
         Input::only($data,['user_id','department_id','organizational_position']); $position=Input::position($data);
-        return $this->guarded($actor,'people.manage',function ($fresh) use ($data,$position) {
+        return $this->guarded($actor,'registrations.review',function ($fresh) use ($data,$position) {
             $target=$this->target($data); $department=$this->department($data); $id=(int)$target['id'];
             if ($target['approval_status']!=='pending_approval'||!$target['email_verified_at']||!$target['is_active']) { throw new ApiError(409,'conflict','این ثبت‌نام آمادهٔ تأیید نیست.'); }
-            $this->app->db->run("UPDATE users SET department_id=?,organizational_position=?,app_role='user',approval_status='approved',approved_by=?,approved_at=UTC_TIMESTAMP(),auth_version=auth_version+1 WHERE id=?",[$department,$position,$fresh['id'],$id]);
+            $groupSet=$this->app->accessGroups->ready()?',access_group_id=1':'';
+            $this->app->db->run("UPDATE users SET department_id=?,organizational_position=?,app_role='user'".$groupSet.",approval_status='approved',approved_by=?,approved_at=UTC_TIMESTAMP(),auth_version=auth_version+1 WHERE id=?",[$department,$position,$fresh['id'],$id]);
             $this->app->events->notify($id,'registration-approved:'.$id,'registration.approved','حساب شما فعال شد','ثبت‌نام شما تأیید شد. اکنون می‌توانید وارد برنامه شوید.',$this->app->url());
             $this->app->audit('registration.approved',(int)$fresh['id'],$id,['department_id'=>$department]);
             return $this->app->auth->publicUser($this->app->auth->user($id));
@@ -80,7 +82,7 @@ final class People
     public function reject(array $data,array $actor): array
     {
         Input::only($data,['user_id','reason']); $reason=Input::text($data,'reason',1000);
-        return $this->guarded($actor,'people.manage',function ($fresh) use ($data,$reason) {
+        return $this->guarded($actor,'registrations.review',function ($fresh) use ($data,$reason) {
             $target=$this->target($data); $id=(int)$target['id'];
             if ($target['approval_status']!=='pending_approval') { throw new ApiError(409,'conflict','این ثبت‌نام منتظر تأیید نیست.'); }
             $this->app->db->run("UPDATE users SET approval_status='rejected',auth_version=auth_version+1 WHERE id=?",[$id]);
@@ -98,6 +100,7 @@ final class People
             if (array_key_exists('department_id',$data)) { $changes['department_id']=$this->department($data); }
             if (array_key_exists('organizational_position',$data)) { $changes['organizational_position']=Input::position($data); }
             if (array_key_exists('employee_number',$data)) { $changes['employee_number']=$this->employeeNumber($data); }
+            if (array_key_exists('special_priority',$data)&&$this->app->accessGroups->ready()) { $this->app->auth->requirePermission($fresh,'departments.manage'); }
             if (array_key_exists('special_priority',$data)) { $changes['special_priority']=(int)Input::boolean($data,'special_priority'); }
             if (!$changes) { Input::invalid('user_id','حداقل یک تغییر لازم است.'); }
             $parts=array_map(static fn($key)=>$key.'=?',array_keys($changes));
@@ -108,11 +111,9 @@ final class People
     }
     private function protectLastAdmin(array $target): void
     {
-        if ($target['app_role']==='admin' && $target['is_active'] && $target['approval_status']==='approved') {
-            $count=$this->app->db->one("SELECT COUNT(*) n FROM users WHERE app_role='admin' AND is_active=1 AND approval_status='approved' AND email_verified_at IS NOT NULL");
-            if ((int)$count['n']<=1) { throw new ApiError(409,'conflict','آخرین مدیر کل فعال باید حفظ شود.'); }
-        }
+        $this->app->accessGroups->protectLastChief($target);
     }
+
     public function status(array $data,array $actor): array
     {
         Input::only($data,['user_id','is_active']); $active=Input::boolean($data,'is_active');
@@ -135,6 +136,7 @@ final class People
         Input::only($data,['user_id','app_role']); $role=$data['app_role']??'';
         if (!in_array($role,['user','admin','hr','operator'],true)) { Input::invalid('app_role'); }
         return $this->guarded($actor,'roles.manage',function ($fresh) use ($data,$role) {
+            if ($this->app->accessGroups->ready()) { return $this->app->accessGroups->assignInTransaction(Input::id($data),$this->app->accessGroups->legacyGroupId($role),$fresh)['user']; }
             $target=$this->target($data); $id=(int)$target['id'];
             if ($target['approval_status']!=='approved') { throw new ApiError(409,'conflict','ابتدا ثبت‌نام باید تأیید شود.'); }
             if ($target['app_role']!==$role) {

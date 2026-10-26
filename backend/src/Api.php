@@ -6,7 +6,7 @@ final class Api
     private const ROUTES = [
         '/health'=>'GET','/session'=>'GET','/login'=>'POST','/logout'=>'POST','/register'=>'POST','/verify'=>'POST','/resend-verification'=>'POST','/forgot'=>'POST','/reset'=>'POST','/change-password'=>'POST',
         '/notifications'=>'GET','/notifications/read'=>'POST','/notifications/read-all'=>'POST','/admin/registrations'=>'GET','/admin/registrations/approve'=>'POST','/admin/registrations/reject'=>'POST',
-        '/admin/users'=>'GET,POST,PATCH','/admin/users/status'=>'POST','/admin/users/role'=>'POST','/departments'=>'GET','/admin/departments'=>'POST','/admin/settings'=>'GET,POST',
+        '/admin/users'=>'GET,POST,PATCH','/admin/access-groups'=>'GET,POST,PATCH','/admin/users/access-group'=>'POST','/admin/users/status'=>'POST','/admin/users/role'=>'POST','/departments'=>'GET','/admin/departments'=>'POST','/admin/settings'=>'GET,POST',
     ];
     public function __construct(private App $app) {}
     public function handle(): array
@@ -57,9 +57,12 @@ final class Api
                 return [200,['items'=>$rows]];
         }
         if (isset(\AccManager\Operations\Api::ROUTES[$route])) { return (new \AccManager\Operations\Api($this->app))->handle($route,$method,$data,$user); }
-        $permission=match ($route) { '/admin/users/role'=>'roles.manage','/admin/settings'=>'settings.manage','/admin/departments'=>'departments.manage',default=>'people.manage' };
+        if (in_array($route,['/admin/access-groups','/admin/users/access-group'],true)) { $this->app->accessGroups->requireReady(); }
+        $permission=match ($route) { '/admin/access-groups','/admin/users/access-group'=>'access_groups.manage','/admin/registrations','/admin/registrations/approve','/admin/registrations/reject'=>'registrations.review','/admin/users/role'=>'roles.manage','/admin/settings'=>'settings.manage','/admin/departments'=>'departments.manage',default=>'people.manage' };
         $this->app->auth->requirePermission($user,$permission);
         return match ($route) {
+            '/admin/access-groups'=>match ($method) { 'GET'=>[200,$this->app->accessGroups->list($user)],'POST'=>[201,$this->app->accessGroups->save($data,$user)],'PATCH'=>[200,$this->app->accessGroups->save($data,$user,true)] },
+            '/admin/users/access-group'=>[200,$this->app->accessGroups->assign($data,$user)],
             '/admin/registrations'=>[200,['items'=>$this->app->people->registrations()]],
             '/admin/registrations/approve'=>[200,['user'=>$this->app->people->approve($data,$user)]],
             '/admin/registrations/reject'=>[200,['user'=>$this->app->people->reject($data,$user)]],

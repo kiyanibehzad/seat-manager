@@ -34,6 +34,10 @@ final class MailWorker
                 $transport=new TrackedSmtp();
                 try {
                     $payload=$this->app->crypto->decrypt($row['payload_encrypted']);
+                    if (!$this->app->events->mailAllowed((int)$row['recipient_id'],$payload,$row['category'])) {
+                        $db->run("UPDATE mail_outbox SET status='cancelled',payload_encrypted=NULL,last_error_code='permission_revoked' WHERE id=?",[$row['id']]);
+                        $counts['cancelled']++; continue;
+                    }
                     $mailer=new PHPMailer(true); $mailer->isSMTP(); $mailer->setSMTPInstance($transport);
                     $mailer->Host=$smtp['host']; $mailer->Port=(int)$smtp['port']; $mailer->SMTPDebug=0;
                     $mailer->Timeout=min(15,max(1,(int)$smtp['timeout_seconds'])); $transport->Timelimit=$mailer->Timeout;

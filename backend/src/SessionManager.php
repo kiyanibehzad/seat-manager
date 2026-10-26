@@ -45,6 +45,6 @@ final class SessionManager
     public function summary(): array
     {
         $user=$this->current();
-        return ['authenticated'=>$user!==null,'user'=>$user?$this->app->auth->publicUser($user):null,'csrf_token'=>$_SESSION['csrf'],'permissions'=>$user?$this->app->auth->permissions($user):[],'app_url'=>$this->app->config['app_url']];
+        return ['authenticated'=>$user!==null,'user'=>$user?$this->app->auth->publicUser($user):null,'csrf_token'=>$_SESSION['csrf'],'permissions'=>$user?$this->app->auth->permissions($user):[],'app_url'=>$this->app->config['app_url'],'capabilities'=>$user?$this->app->accessGroups->selected($user):[],'access_groups_ready'=>$this->app->accessGroups->ready()];
     }
 }

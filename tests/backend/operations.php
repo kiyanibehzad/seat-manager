@@ -1,18 +1,18 @@
 <?php
 declare(strict_types=1);
 ini_set('display_errors','0'); ini_set('zend.exception_ignore_args','1');
-$root=dirname(__DIR__,2); chdir($root); putenv('ACC_CONFIG='.$root.'/storage/run/test-config.php');
-require $root.'/backend/vendor/autoload.php'; require __DIR__.'/OperationsSupport.php';
+$root=dirname(__DIR__,2); chdir($root);
+require $root.'/backend/vendor/autoload.php'; require __DIR__.'/OperationsSupport.php'; configureTestEnvironment($root);
 use AccManager\{App,Migrator,Installer,Reminders,MailWorker};
 use AccManager\Operations\{Domain,Capacity,Queue,Dashboard};
 $assertions=0;
 try {
  $app=App::boot($root); $db=$app->db; $domain=new Domain($app);
- opCheck($app->config['environment']==='test'&&$db->one('SELECT DATABASE() n')['n']==='acc_manager_test','dedicated test DB guard');
+ testDatabaseGuard($app,true); opCheck(true,'dedicated test database and HTTP guard');
  opCheck(hash_file('sha256','database/migrations/001_identity.sql')==='3ab79406fc5622b9ecdcf63d98f16ba884fc0871fc9aae6f5b78567f58b04642','stage 1 migration frozen');
  $db->run('SET FOREIGN_KEY_CHECKS=0'); foreach ($db->all('SHOW TABLES') as $table) { $name=array_values($table)[0]; if (!preg_match('/^[a-z_]+$/',$name)) { throw new RuntimeException('FAIL: table guard'); } $db->pdo->exec('DROP TABLE `'.$name.'`'); } $db->run('SET FOREIGN_KEY_CHECKS=1');
- opCheck(count((new Migrator($app))->run())===2,'both migrations on fresh real database');
- (new Installer($app))->install(trim(file_get_contents('storage/run/setup-token.txt')),['email'=>'ops-admin@example.test','first_name'=>'مدیر','last_name'=>'آزمون','department_name'=>'عمومی']);
+ opCheck(count((new Migrator($app))->run())===count(glob($root.'/database/migrations/*.sql')),'all migrations on fresh real database');
+ (new Installer($app))->install(testSetupSecret($root),['email'=>'ops-admin@example.test','first_name'=>'مدیر','last_name'=>'آزمون','department_name'=>'عمومی']);
  $adminRow=$db->one("SELECT * FROM users WHERE email='ops-admin@example.test'"); $adminId=(int)$adminRow['id'];
  $mail=$db->one("SELECT payload_encrypted FROM mail_outbox WHERE recipient_id=? AND category='initial_password'",[$adminId]); preg_match('/رمز اولیه: ([a-f0-9]+)/u',$app->crypto->decrypt($mail['payload_encrypted'])['body'],$match);
  $admin=new OpsClient(); $admin->login($adminRow['email'],$match[1]); $defaultDepartment=(int)$adminRow['department_id'];
@@ -20,7 +20,7 @@ try {
  $password=bin2hex(random_bytes(12)); $hash=password_hash($password,PASSWORD_DEFAULT); $people=[];
  foreach (['operator','hr','user1','user2','user3'] as $name) {
   $role=in_array($name,['operator','hr'],true)?$name:'user'; $department=$name==='user1'?$highDepartment:$defaultDepartment;
-  $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,special_priority,app_role,email_verified_at,approval_status) VALUES(?,?,?,?,?,?,?, ?,UTC_TIMESTAMP(),'approved')",[$name.'@example.test',$hash,$name,'آزمون',$department,$name==='user1'?'supervisor':'employee',$name==='user1'?1:0,$role]);
+  $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,special_priority,app_role,access_group_id,email_verified_at,approval_status) VALUES(?,?,?,?,?,?,?,?,?,UTC_TIMESTAMP(),'approved')",[$name.'@example.test',$hash,$name,'آزمون',$department,$name==='user1'?'supervisor':'employee',$name==='user1'?1:0,$role,testGroupId($app,$role)]);
   $people[$name]=(int)$db->pdo->lastInsertId();
  }
  $operator=new OpsClient(); $operator->login('operator@example.test',$password); $hr=new OpsClient(); $hr->login('hr@example.test',$password);

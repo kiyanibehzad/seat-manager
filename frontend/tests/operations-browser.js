@@ -1,13 +1,24 @@
-import {fixtures,testPermissions} from './operations-fixtures.js';
-const build=await(await fetch('../build/staging/build-info.json',{cache:'no-store'})).json();
-const {mountOperations}=await import('../build/staging/assets/operations/controller.js?v='+build.version);
-const {mountTheme}=await import('../build/staging/assets/theme.js?v='+build.version);
-const {themeMarkup}=await import('../build/staging/assets/auth-view.js?v='+build.version);
+import {fixtures,testPermissions,accessGroupFixtures} from './operations-fixtures.js';
+// Source mode reviews an unbuilt frontend without publishing local product assets.
+const sourceMode=new URL(location.href).searchParams.has('source');
+const build=sourceMode?null:await(await fetch('../build/staging/build-info.json',{cache:'no-store'})).json();
+const moduleBase=sourceMode?'../src/':'../build/staging/assets/',version=build?'?v='+build.version:'';
+if(sourceMode){
+  document.querySelector('link[rel=stylesheet]').href='../styles/app.css';
+  for(const path of ['../styles/operations/approved.css','../styles/operations/integration.css','../styles/footer.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=path;document.head.appendChild(link);}
+  const fonts=document.createElement('style');fonts.textContent=[['regular',400],['medium',500],['bold',700]].map(([name,weight])=>`@font-face{font-family:"ACC IRANSans";src:url("../local-fonts/iransans-${name}.ttf");font-weight:${weight}}`).join('');document.head.appendChild(fonts);
+}
+const {mountOperations}=await import(moduleBase+'operations/controller.js'+version);
+const {mountTheme}=await import(moduleBase+'theme.js'+version);
+const {themeMarkup}=await import(moduleBase+'auth-view.js'+version);
 document.querySelector('#test-theme').innerHTML=themeMarkup();mountTheme();
-let f=fixtures(),role='admin',page='overview',scenario='normal',panel=null,writes=0;
+let access=accessGroupFixtures();
+let f=fixtures(),role='admin',page='overview',scenario='normal',panel=null,writes=0,readRoutes=[];
 const requests=[f.request,{...f.request,id:502,status:'rejected',rejection_reason:'نتیجهٔ آزمون بررسی درخواست'}];
 const transport={
   async read(route,query={}){
+    readRoutes.push(route);document.querySelector('#read-routes').textContent='خواندن آزمایشی: '+[...new Set(readRoutes)].join('، ');
+    if(scenario==='forbidden')throw Object.assign(Error('دسترسی این بخش تغییر کرده است.'),{code:'forbidden',status:403});
     if(scenario==='error')throw Object.assign(Error('خطای آزمایشی دریافت اطلاعات'),{code:'unavailable',status:503});
     const empty=scenario==='empty',items=value=>({items:empty?[]:value,next_before_id:null});
     // Visual-only DTO variants. These never call a real API or alter the base fixture.
@@ -25,6 +36,7 @@ const transport={
     if(route==='/reasons')return{...items(f.reasons),other_code:'other'};
     if(route==='/departments')return items(f.departments);
     if(route==='/admin/users')return items(f.users);
+    if(route==='/admin/access-groups')return {...access,items:empty?[]:access.items};
     if(route==='/admin/registrations')return items([{...f.users[1],approval_status:'pending_approval'}]);
     if(route==='/admin/accounts')return items(visualAccounts.filter(a=>!query.owner_id||a.owner_id===query.owner_id));
     if(route==='/admin/queue')return{requests:empty||scenario==='renewal'||scenario==='partial'||capacityPartial?[]:[visualRequest],renewals:!empty&&scenario==='renewal'?[visualRequest]:[],capacity:visualCapacity};
@@ -39,8 +51,20 @@ const transport={
     if(route==='/admin/finance')return items([{id:1,recorded_at:'2026-10-24T08:00:00Z',reason:'ثبت آزمون ظرفیت',finance:null}]);
     throw Error('مسیر آزمون ناشناخته است');
   },
-  async write(route,body){
+  async write(route,body,options){
     writes++;document.querySelector('#write-count').textContent=writes+' ثبت آزمایشی';document.querySelector('#write-count').dataset.count=String(writes);
+    document.querySelector('#last-command').textContent=JSON.stringify({route,body,method:options?.method||'POST'});
+    if(scenario==='forbidden')throw Object.assign(Error('دسترسی این کار را ندارید.'),{code:'forbidden',status:403});
+    if(route==='/admin/access-groups'){
+      const existing=access.items.find(g=>g.id===body.group_id);
+      if(existing&&scenario==='stale-group'){existing.revision++;throw Object.assign(Error('گروه تغییر کرده است؛ اطلاعات تازه را بررسی کنید.'),{code:'revision_conflict',status:409});}
+      const group={...(existing||{id:Math.max(...access.items.map(g=>g.id))+1,system_key:null,protected:false,is_super_admin:false,user_count:0}),name:body.name,capabilities:body.capabilities,revision:(existing?.revision||0)+1};
+      if(existing)access.items=access.items.map(g=>g.id===existing.id?group:g);else access.items.push(group);
+      f.users=f.users.map(u=>u.access_group_id===group.id?{...u,access_group_name:group.name}:u);return {group};
+    }
+    if(route==='/admin/users/access-group'){const group=access.items.find(g=>g.id===body.access_group_id);f.users=f.users.map(u=>u.id===body.user_id?{...u,access_group_id:group.id,access_group_name:group.name,is_super_admin:group.is_super_admin}:u);return {user:f.users.find(u=>u.id===body.user_id)};}
+    if(route==='/admin/users'&&options?.method==='PATCH'){f.users=f.users.map(u=>u.id===body.user_id?{...u,...body}:u);return {user:f.users.find(u=>u.id===body.user_id)};}
+
     if(route==='/requests'){const account=f.accounts.find(a=>a.id===body.account_id);const r={...f.request,id:800+writes,account,kind:body.kind,requested_seat:body.seat,requested_starts_at:body.starts_at??null,requested_ends_at:body.ends_at??null,status:'pending'};requests.push(r);return{request:r};}
     if(route==='/admin/operations/result'){f.operation={...f.operation,status:body.complete?'completed':'ongoing',phase:body.complete?'completed':'partial',items:f.operation.items.map(item=>({...item,result_recorded:body.results.some(r=>r.account_id===item.account.id)}))};return{operation:f.operation};}
     if(route==='/admin/operations/abort'){f.operation={...f.operation,status:'cancelled',phase:'cancelled',outcome:'rolled_back'};return{operation:f.operation};}
@@ -49,7 +73,7 @@ const transport={
     return{};
   },
 };
-function mount(){panel?.destroy();panel=mountOperations({container:document.querySelector('#test-panel'),transport,session:{authenticated:true,user:{...f.users[0],app_role:role},permissions:testPermissions(role)},baseUrl:new URL('.',location.href),initialRoute:{page,tab:'pending',day:'today'},navigate:()=>{}});}
+function mount(){panel?.destroy();readRoutes=[];document.querySelector('#read-routes').textContent='بدون خواندن آزمایشی';panel=mountOperations({container:document.querySelector('#test-panel'),transport,session:{authenticated:true,access_groups_ready:scenario!=='migration',user:{...f.users[0],app_role:['admin','hr','operator','user'].includes(role)?role:'user',access_group_id:({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role],access_group_name:access.items.find(g=>g.id===({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role])?.name,is_super_admin:role==='admin'},permissions:testPermissions(role)},baseUrl:new URL('.',location.href),initialRoute:{page,tab:'pending',day:'today'},navigate:()=>{}});}
 for(const [selector,assign]of [['#test-role',v=>role=v],['#test-page',v=>page=v],['#test-state',v=>scenario=v]])document.querySelector(selector).addEventListener('change',event=>{assign(event.target.value);mount();});
 document.querySelector('#audit-dates').addEventListener('click',()=>{const form=document.querySelector('[data-op-form]');document.querySelector('#date-audit').textContent=JSON.stringify({nativeReportValidity:form?.reportValidity(),dates:Array.from(form?.querySelectorAll('[data-jalali]')||[]).map(input=>({name:input.name,readOnly:input.readOnly,willValidate:input.willValidate,value:input.value,invalid:input.getAttribute('aria-invalid')}))});});
 mount();

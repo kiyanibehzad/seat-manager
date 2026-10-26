@@ -19,7 +19,7 @@ try {
  $db->run("INSERT INTO departments(name,base_score) VALUES('فناوری',5)"); $technical=(int)$db->pdo->lastInsertId();
  foreach ([['operator','اپراتور','حساب‌ها','operator',$general,'employee',false],['hr','منابع','انسانی','hr',$general,'employee',false],['alice','آزاده','آزمایشی','user',$technical,'supervisor',false],['bob','بهرام','آزمایشی','user',$general,'employee',false],['cara','کتایون','آزمایشی','user',$general,'employee',true],['dora','داریوش','آزمایشی','user',$general,'employee',false]] as [$key,$first,$last,$role,$department,$position,$special]) {
   $password=$qaPassword; $email='qa-'.$key.'@example.test';
-  $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,special_priority,app_role,email_verified_at,approval_status) VALUES(?,?,?,?,?,?,?,?,UTC_TIMESTAMP(),'approved')",[$email,password_hash($password,PASSWORD_DEFAULT),$first,$last,$department,$position,(int)$special,$role]);
+  $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,special_priority,app_role,access_group_id,email_verified_at,approval_status) VALUES(?,?,?,?,?,?,?,?,?,UTC_TIMESTAMP(),'approved')",[$email,password_hash($password,PASSWORD_DEFAULT),$first,$last,$department,$position,(int)$special,$role,(int)$db->one('SELECT id FROM access_groups WHERE system_key=?',[$role])['id']]);
   $identities[$key]=(int)$db->pdo->lastInsertId(); $access[]=['role'=>$key==='operator'||$key==='hr'?$key:'user:'.$key,'email'=>$email,'password'=>$password];
  }
  // Invalidate all pre-reset test sessions even when numeric IDs are reused.

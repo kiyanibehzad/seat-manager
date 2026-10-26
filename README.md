@@ -10,15 +10,16 @@ A Persian-first internal web application for requesting and managing OpenAI acco
 
 - Multiple named accounts per person; Standard, Premium and No Seat status.
 - Request queues, temporary or indefinite assignments, renewal approval and two-account transfers.
-- Separate administrator, HR, operator and employee permissions; private personal history.
+- Named permission groups, independent of organizational departments and priority scores; one group per person, with administrator, HR, operator and employee presets.
+- A daily work desk, full seat/request queues and independent registration review; personal accounts and private history for every group.
 - Purchased/assigned/held/free capacity, conditional waiting-time estimates and an audit trail.
-- Corporate-domain registration, email verification and HR approval; password recovery.
+- Corporate-domain registration, email verification and approval by an authorized reviewer; password recovery.
 - In-app notifications, queued SMTP email and temporary Premium reminders.
 - Persian RTL interface, Jalali dates, Iran time, and light/dark/system themes.
 
 ## Status
 
-The frontend and backend are integrated and have been reviewed locally. This repository is source code, not a finished one-click hosting package. A combined deployment archive, a friendly installation wizard and validation against a selected production host/SMTP service remain separate work.
+The frontend and backend are integrated. A combined offline release builder and a one-time first-administrator setup page are available. The host still needs its own private database/configuration, HTTPS and reminder schedule; SMTP is configured separately. Initial setup lets the owner choose an email and password without waiting for email delivery. There is no default login.
 
 ## Build and run locally
 
@@ -35,6 +36,15 @@ Then follow [local setup](docs/SETUP.md). The optional local service helper addi
 
 برای راه‌اندازی محلی، [راهنمای نصب و اجرا](docs/SETUP.md) را دنبال کنید. تنظیمات خصوصی، پایگاه داده، نشست‌ها و ایمیل‌های آزمایشی وارد مخزن نمی‌شوند. فایل‌های لازم رابط از خود برنامه بارگذاری می‌شوند و به CDN وابسته نیستند.
 
+After building the frontend and preparing PHP dependencies, create a combined hosting archive outside the web root:
+
+```sh
+php bin/build-release.php /absolute/new-seat-manager-release.zip
+php tests/backend/release-package.php /absolute/new-seat-manager-release.zip
+```
+
+Only `public_html/` is public. The archive includes no real configuration, installation key or local data. Follow [the installation guide](docs/backend/INSTALL.md) before opening `/install.html` to create the first administrator.
+
 ## Fonts and dependencies
 
 IRANSans files are not distributed in this public repository. The interface uses a local system-font fallback when they are absent. If you have the appropriate license, add the three optional font files to the ignored `frontend/local-fonts/` directory before building. See [third-party notices](THIRD_PARTY.md).
@@ -45,7 +55,7 @@ IRANSans files are not distributed in this public repository. The interface uses
 node --test frontend/tests/*.test.mjs
 ```
 
-Backend integration tests use a separate test database; some deliberately recreate its contents. Do not run them against a database whose contents you need to preserve. See [setup](docs/SETUP.md), [identity API](docs/backend/API.md), [operations API](docs/backend/API-OPERATIONS.md) and [operational behavior](docs/backend/OPERATIONS.md).
+Backend integration tests use a separate test database; some deliberately recreate its contents. Do not run them against a database whose contents you need to preserve. See [setup](docs/SETUP.md), [identity API](docs/backend/API.md), [permission groups](docs/backend/ACCESS-GROUPS-CONTRACT.md), [operations API](docs/backend/API-OPERATIONS.md) and [operational behavior](docs/backend/OPERATIONS.md).
 
 ## License
 

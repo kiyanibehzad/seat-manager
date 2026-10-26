@@ -21,6 +21,7 @@ final class Api
         $permission=match ($route) {
             '/accounts','/history','/reasons'=>'personal.read','/requests','/requests/detail','/requests/cancel'=>'personal.request',
             '/admin/users/bulk-preview','/admin/users/bulk-commit'=>'people.manage',
+            '/admin/dashboard'=>'dashboard.read',
             '/admin/reasons'=>'settings.manage','/admin/finance'=>'finance.read','/admin/capacity'=>$method==='GET'?'capacity.read':'capacity.manage',
             default=>'seats.manage',
         };

@@ -25,6 +25,7 @@ export function createOperationsApi(transport){
   const commands=new WeakMap();
   return {
     personal:{accounts:(query={},signal)=>read('/accounts',query,signal).then(list),requests:signal=>read('/requests',{},signal).then(list),request:(id,signal)=>read('/requests/detail',{id},signal),history:(query,signal)=>read('/history',query,signal).then(list),reasons:signal=>read('/reasons',{},signal).then(list)},
+    access:{groups:signal=>read('/admin/access-groups',{},signal)},
     people:{users:signal=>read('/admin/users',{},signal).then(list),registrations:signal=>read('/admin/registrations',{},signal).then(list),departments:signal=>read('/departments',{},signal).then(list),settings:signal=>read('/admin/settings',{},signal)},
     admin:{allAccounts,requests:(query={},signal)=>read('/admin/requests',query,signal).then(list),accounts:(query,signal)=>read('/admin/accounts',query,signal).then(list),queue:signal=>read('/admin/queue',{},signal),dashboard:signal=>read('/admin/dashboard',{},signal),request:(id,signal)=>read('/admin/requests/detail',{id},signal),operations:(query,signal)=>read('/admin/operations',query,signal).then(list),operation:(id,signal)=>read('/admin/operations/detail',{id},signal),capacity:signal=>read('/admin/capacity',{},signal),history:(query,signal)=>read('/admin/history',query,signal).then(list),finance:(query={},signal)=>read('/admin/finance',query,signal)},
     command:(command,signal)=>{

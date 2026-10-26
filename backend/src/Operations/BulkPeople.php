@@ -52,6 +52,7 @@ final class BulkPeople
                 $row=$item['normalized']; $password=bin2hex(random_bytes(12));
                 $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,employee_number,email_verified_at,approval_status,approved_by,approved_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP(),'approved',?,UTC_TIMESTAMP())",[$row['email'],password_hash($password,PASSWORD_DEFAULT),$row['first_name'],$row['last_name'],$row['department_id'],$row['organizational_position'],$row['employee_number'],$fresh['id']]);
                 $id=(int)$db->pdo->lastInsertId();
+                $this->d->app->accessGroups->initializeUser($id);
                 if ($row['initial_openai_email']!==null) { (new Accounts($this->d))->createInTx($id,$row['initial_openai_email']); }
                 $this->d->app->mail->enqueue($id,'initial-password:'.$id,$row['email'],'حساب برنامه ساخته شد',"آدرس ورود: ".$this->d->app->url()."\nرمز اولیه: ".$password,null,'initial_password');
                 $this->d->app->audit('user.created',(int)$fresh['id'],$id); $users[]=$this->d->app->auth->publicUser($this->d->app->auth->user($id));

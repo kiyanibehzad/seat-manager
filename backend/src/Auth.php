@@ -5,10 +5,18 @@ final class Auth
 {
     public const USER_SELECT = 'SELECT u.id,u.email,u.first_name,u.last_name,u.employee_number,u.department_id,d.name department_name,u.organizational_position,u.app_role,u.special_priority,u.is_active,u.email_verified_at,u.approval_status,u.auth_version FROM users u LEFT JOIN departments d ON d.id=u.department_id';
     public function __construct(private App $app) {}
-    public function user(int $id): ?array { return $this->app->db->one(self::USER_SELECT . ' WHERE u.id=?',[$id]); }
+    public function userSelect(): string
+    {
+        if (!$this->app->accessGroups->ready()) { return self::USER_SELECT; }
+        return str_replace('u.auth_version FROM users u','u.auth_version,u.access_group_id,g.name access_group_name,g.is_super_admin FROM users u',self::USER_SELECT).' JOIN access_groups g ON g.id=u.access_group_id';
+    }
+    public function user(int $id): ?array { return $this->app->db->one($this->userSelect() . ' WHERE u.id=?',[$id]); }
     public function publicUser(array $user): array
     {
         unset($user['auth_version']);
+        $user['access_group_id']=isset($user['access_group_id'])?(int)$user['access_group_id']:null;
+        $user['access_group_name']=$user['access_group_name']??null;
+        $user['is_super_admin']=(bool)($user['is_super_admin']??false);
         $user['id'] = (int)$user['id'];
         $user['department_id'] = $user['department_id'] === null ? null : (int)$user['department_id'];
         $user['is_active'] = (bool)$user['is_active'];
@@ -19,12 +27,10 @@ final class Auth
     }
     public function permissions(array $user): array
     {
-        $permissions = ['personal.read','personal.request','notifications.read'];
-        if (in_array($user['app_role'],['admin','hr'],true)) { $permissions = array_merge($permissions,['people.manage','departments.manage']); }
-        if (in_array($user['app_role'],['admin','operator'],true)) { $permissions = array_merge($permissions,['seats.manage','requests.manage','capacity.read']); }
-        if ($user['app_role'] === 'admin') { $permissions = array_merge($permissions,['roles.manage','settings.manage','finance.read','capacity.manage']); }
-        return $permissions;
+        return $this->app->accessGroups->permissions($user);
     }
+    public function recipients(string $permission): array { return $this->app->accessGroups->recipients($permission); }
+
     public function requirePermission(array $user, string $permission): void
     {
         if (!in_array($permission,$this->permissions($user),true)) { throw new ApiError(403,'forbidden','دسترسی این عملیات را ندارید.'); }
@@ -72,6 +78,7 @@ final class Auth
                 if ($this->app->db->one('SELECT id FROM users WHERE email=?',[$email])) { return; }
                 $this->app->db->run('INSERT INTO users(email,password_hash,first_name,last_name) VALUES(?,?,?,?)',[$email,$hash,$first,$last]);
                 $id=(int)$this->app->db->pdo->lastInsertId();
+                $this->app->accessGroups->initializeUser($id);
                 $this->issueToken($id,'verify_email');
                 $this->app->audit('registration.created',null,$id);
             });
@@ -125,8 +132,8 @@ final class Auth
             $id=(int)$user['id'];
             $this->app->db->run("UPDATE users SET email_verified_at=UTC_TIMESTAMP(),approval_status='pending_approval' WHERE id=?",[$id]);
             $this->app->db->run('UPDATE auth_tokens SET consumed_at=UTC_TIMESTAMP() WHERE id=?',[$token['id']]);
-            foreach ($this->app->db->all("SELECT id FROM users WHERE app_role IN ('admin','hr') AND is_active=1 AND approval_status='approved'") as $reviewer) {
-                $this->app->events->notify((int)$reviewer['id'],'registration-ready:'.$id,'registration.ready','ثبت‌نام منتظر بررسی','ثبت‌نام '.$user['first_name'].' '.$user['last_name'].' برای بررسی آماده است.',$this->app->url('view=registrations'));
+            foreach ($this->recipients('registrations.review') as $reviewer) {
+                $this->app->events->notify((int)$reviewer,'registration-ready:'.$id,'registration.ready','ثبت‌نام منتظر بررسی','ثبت‌نام '.$user['first_name'].' '.$user['last_name'].' برای بررسی آماده است.',$this->app->url('view=registrations'));
             }
             $this->app->audit('registration.email_verified',$id,$id);
         });

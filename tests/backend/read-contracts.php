@@ -28,7 +28,7 @@ try {
     $db->run('INSERT INTO departments(name,base_score) VALUES(?,5)',['قرارداد '.$nonce]); $department=(int)$db->pdo->lastInsertId();
     $users=[];
     foreach (['admin','hr','operator','user'] as $role) {
-        $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,app_role,email_verified_at,approval_status) VALUES(?,?,?,?,?,?,UTC_TIMESTAMP(),'approved')",[$role.'-'.$nonce.'@example.test',$hash,$role,'قرارداد',$department,$role]);
+        $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,app_role,access_group_id,email_verified_at,approval_status) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP(),'approved')",[$role.'-'.$nonce.'@example.test',$hash,$role,'قرارداد',$department,$role,(int)$db->one('SELECT id FROM access_groups WHERE system_key=?',[$role])['id']]);
         $users[$role]=(int)$db->pdo->lastInsertId();
     }
     $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,special_priority,email_verified_at,approval_status) VALUES(?,?,?,?,?,'supervisor',1,UTC_TIMESTAMP(),'approved')",['supervisor-'.$nonce.'@example.test',$hash,'سرپرست','قرارداد',$department]);

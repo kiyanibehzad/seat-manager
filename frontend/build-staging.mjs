@@ -12,7 +12,8 @@ const hasFonts=(await Promise.all(fonts.map(file=>access(path.join(fontRoot,file
 let css=(await Promise.all(['styles/app.css','styles/footer.css','styles/operations/approved.css','styles/operations/integration.css'].map(file=>readFile(path.join(frontend,file),'utf8')))).join('\n');
 if(!hasFonts)css=css.replace(/^@font-face\{[^\n]+\}\r?\n/gm,'');
 const icon=await readFile(path.join(frontend,'src/brand/icon.svg'));
-const version=createHash('sha256').update([...sources].sort().map(([,body])=>body).join('\n')+css).update(icon).digest('hex').slice(0,12);
+const templates=new Map(await Promise.all(['index','install'].map(async name=>[name,await readFile(path.join(frontend,name+'.template.html'),'utf8')])));
+const version=createHash('sha256').update([...sources].sort().map(([,body])=>body).join('\n')+css+[...templates.values()].join('\n')).update(icon).digest('hex').slice(0,12);
 await rm(output,{recursive:true,force:true});
 await mkdir(path.join(assets,'brand'),{recursive:true});
 for(const [file,source]of sources){const target=path.join(assets,file);await mkdir(path.dirname(target),{recursive:true});await writeFile(target,source.replace(/from (['"])(\.{1,2}\/[^'"]+\.js)\1/g,(_,q,url)=>`from ${q}${url}?v=${version}${q}`));}
@@ -24,8 +25,10 @@ await mkdir(previewAssets,{recursive:true});
 await writeFile(path.join(previewAssets,'app.css'),css);
 await rm(path.join(previewAssets,'fonts'),{recursive:true,force:true});
 if(hasFonts){await mkdir(path.join(previewAssets,'fonts'),{recursive:true});for(const font of fonts)await copyFile(path.join(fontRoot,font),path.join(previewAssets,'fonts',font));}
-const current=await readFile(path.join(frontend,'index.template.html'),'utf8');
-const html=current.replace(/(href="\.\/assets\/app.css)(?:\?v=[^"]+)?"/,`$1?v=${version}"`).replace(/src="\.\/assets\/(?:operations\/)?app.js(?:\?v=[^"]+)?"/,`src="./assets/operations/app.js?v=${version}"`).replace('href="./assets/brand/icon.svg"',`href="./assets/brand/icon.svg?v=${version}"`);
-await writeFile(path.join(output,'index.html'),html);
-await writeFile(path.join(output,'build-info.json'),JSON.stringify({version,entry:'assets/operations/app.js',contract:'docs/backend/API-OPERATIONS.md',publicPublished:false},null,2)+'\n');
+for(const [name,current] of templates){
+  const entry=name==='index'?'operations/app.js':'install.js';
+  const html=current.replace(/(href="\.\/assets\/app.css)(?:\?v=[^"]+)?"/,`$1?v=${version}"`).replace(/src="\.\/assets\/(?:operations\/app|app|install)\.js(?:\?v=[^"]+)?"/,`src="./assets/${entry}?v=${version}"`).replace('href="./assets/brand/icon.svg"',`href="./assets/brand/icon.svg?v=${version}"`);
+  await writeFile(path.join(output,name+'.html'),html);
+}
+await writeFile(path.join(output,'build-info.json'),JSON.stringify({version,entry:'assets/operations/app.js',installer:'assets/install.js',contract:'docs/backend/API-OPERATIONS.md',publicPublished:false},null,2)+'\n');
 console.log(`Staging ${version} ready; ${hasFonts?'licensed local fonts included':'system-font fallback (no proprietary fonts)'}; public_html was not written.`);

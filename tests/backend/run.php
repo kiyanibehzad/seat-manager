@@ -3,7 +3,7 @@ declare(strict_types=1);
 // Destructive only to the dedicated *_test database; never the development database.
 ini_set('display_errors','0'); ini_set('zend.exception_ignore_args','1');
 $root=dirname(__DIR__,2); chdir($root);
-putenv('ACC_CONFIG='.$root.'/storage/run/test-config.php');
+require __DIR__.'/OperationsSupport.php'; configureTestEnvironment($root);
 require $root.'/backend/vendor/autoload.php';
 use AccManager\App;
 use AccManager\Installer;
@@ -16,8 +16,10 @@ final class Client
     private CurlHandle $curl;
     public string $csrf='';
     public array $lastHeaders=[];
-    public function __construct(public string $base='http://127.0.0.1:8788/api/index.php')
+    public string $base;
+    public function __construct(?string $base=null)
     {
+        $this->base=$base??testBaseUrl().'/api/index.php';
         $this->curl=curl_init(); curl_setopt_array($this->curl,[CURLOPT_RETURNTRANSFER=>true,CURLOPT_COOKIEFILE=>'',CURLOPT_TIMEOUT=>20]);
     }
     public function cookie(): string
@@ -59,11 +61,11 @@ function worker(App $app): array { return (new MailWorker($app))->run(100,20); }
 
 try {
     $app=App::boot($root); $db=$app->db;
-    check($app->config['environment']==='test' && str_contains($app->config['db']['dsn'],'127.0.0.1;port=33079') && $db->one('SELECT DATABASE() n')['n']==='acc_manager_test','test database isolation guard');
+    testDatabaseGuard($app,true); testSubfolderBaseUrl(); check(true,'test database and HTTP isolation guard');
     $db->run('SET FOREIGN_KEY_CHECKS=0'); foreach ($db->all('SHOW TABLES') as $table) { $name=array_values($table)[0]; if (!preg_match('/^[a-z_]+$/',$name)) { throw new RuntimeException('Unexpected table'); } $db->pdo->exec('DROP TABLE `'.$name.'`'); } $db->run('SET FOREIGN_KEY_CHECKS=1');
     check(count((new Migrator($app))->run())===count(glob($root.'/database/migrations/*.sql')),'fresh migrations (stage 1 plus additive migrations)'); check((new Migrator($app))->run()===[],'migration repeat');
     check(!$db->all("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND ENGINE<>'InnoDB'"),'all tables InnoDB');
-    $secret=trim(file_get_contents($root.'/storage/run/setup-token.txt'));
+    $secret=testSetupSecret($root);
     expectError(fn()=>(new Installer($app))->install('wrong',[]),403,'installer protected');
     (new Installer($app))->install($secret,['email'=>'admin@example.test','first_name'=>'مدیر','last_name'=>'آزمایش','department_name'=>'فنی']);
     expectError(fn()=>(new Installer($app))->install($secret,['email'=>'other@example.test','first_name'=>'دوم','last_name'=>'آزمایش','department_name'=>'دوم']),409,'installer cannot repeat');
@@ -242,12 +244,12 @@ try {
     $statuses=[]; foreach ($processes as [$process,$pipes]) { $statuses[]=trim(stream_get_contents($pipes[1])); stream_get_contents($pipes[2]); fclose($pipes[1]); fclose($pipes[2]); proc_close($process); } sort($statuses);
     check($statuses===['200','422'],'concurrent reset consumes once');
     check((int)$db->one('SELECT auth_version FROM users WHERE id=?',[$memberId])['auth_version']===$versionBefore+1,'concurrent reset has one password mutation');
-    $subfolder=new Client('http://127.0.0.1:8789/portal/api/index.php'); $r=$subfolder->session(); status($r,200,'subfolder session');
+    $subfolder=new Client(testSubfolderBaseUrl().'/api/index.php'); $r=$subfolder->session(); status($r,200,'subfolder session');
     check(str_contains(implode(' ', $subfolder->lastHeaders),'path=/portal/'),'subfolder cookie path');
     status($subfolder->login('admin@example.test',$adminPassword),200,'subfolder authenticated API');
     status($subfolder->call('POST','/forgot',['email'=>'admin@example.test']),202,'subfolder email route');
     $mail=$db->one("SELECT m.payload_encrypted FROM mail_outbox m JOIN auth_tokens t ON t.id=m.auth_token_id WHERE t.user_id=? AND t.purpose='reset_password' ORDER BY t.id DESC LIMIT 1",[$adminId]);
-    check(str_contains($app->crypto->decrypt($mail['payload_encrypted'])['body'],'http://127.0.0.1:8789/portal/#action=reset&token='),'subfolder link base');
+    check(str_contains($app->crypto->decrypt($mail['payload_encrypted'])['body'],testSubfolderBaseUrl().'/#action=reset&token='),'subfolder link base');
     status($hr->call('POST','/admin/departments',['name'=>'پشتیبانی','base_score'=>6]),422,'department score constrained');
     status($hr->call('POST','/admin/departments',['name'=>'پشتیبانی','base_score'=>3]),200,'HR department management');
     $updated=$hr->call('PATCH','/admin/users',['user_id'=>$memberId,'special_priority'=>true,'organizational_position'=>'employee','employee_number'=>'P-123']); status($updated,200,'HR profile and priority update');
