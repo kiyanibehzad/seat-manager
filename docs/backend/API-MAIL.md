@@ -1,0 +1,15 @@
+# Mail API contract (launch)
+
+Same JSON envelope/session/CSRF as existing API. All routes require an eligible **actual protected chief group**. Mail appears as one section in existing settings. No frontend changes belong to backend author.
+
+- `GET /admin/mail` → `{settings,status}`.
+- `POST /admin/mail` → save and return same view. Fields: `delivery_enabled` boolean (default false), `transport: smtp|phpmail`, `from_email`, `from_name`, `smtp_host`, `smtp_port`, `smtp_encryption: tls|ssl` (local test sink also accepts empty), `smtp_username`, `smtp_password`, `clear_password` boolean, `expected_revision` integer. Blank/omitted password retains it; `clear_password:true` removes it. Reject simultaneous new password + clear. Response settings includes `password_configured` and `revision`, **never smtp_password**.
+- `POST /admin/mail/test-connection` → checks saved SMTP connection/auth without sending, or reports PHP mail availability (not delivery proof). `{ok,code,message}`; explicit user action only.
+- `POST /admin/mail/send-test` body `{recipient,idempotency_key}` → explicit test using saved transport, allowed while automatic delivery is off. Returns `{id,status,code,message}`. Fixed harmless test message. Does not flush other queued messages. Never automatically resend uncertain result. Replaying same key returns same result; use a fresh key for a deliberate new test.
+- `POST /admin/mail/retry` body `{id}` → manual retry only for retained safe failed-before-delivery or pending/retry rows. Never `sending/sent/uncertain/cancelled` or expired/consumed auth-token messages.
+
+`status` contains counts for all queue states, recent metadata-only items (id/category/status/attempts/timestamps/error_code/error_message/retryable), `last_success_at`, `worker_last_started_at`, `worker_last_finished_at`, `worker_last_error_code`, `cron_ready` (successful run in last 5 minutes), `cron_interval_minutes:1`, and `delivery_ready`. No address, subject, message body, tokens or credentials. Status freshness is evidence of successful execution, not proof host scheduler is installed. PHP mail success means accepted by local mail system, not inbox receipt.
+
+Settings saves are revision guarded (409 on stale revision). Test actions are rate limited, redact transport diagnostics and perform no automatic send. SMTP requires TLS/SSL in production. Nonproduction permits SMTP only at `127.0.0.1:10279`; PHP mail is production-only. API returns normal 403/409/422 errors for access/conflict/input problems. Migration `004_mail_settings.sql` is additive; existing config remains untouched and retained as initial defaults. First migration always disables automatic delivery until chief enables it.
+
+Backend files planned: `backend/src/{MailSettings,MailTransport,MailWorker,Api}.php`, `database/migrations/004_mail_settings.sql`, `bin/cron.php`, isolated `tests/backend/mail-settings.php`, backend operations/readiness docs. No frontend edits, commits, deployments, real email/OpenAI calls or host cron execution.

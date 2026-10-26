@@ -50,8 +50,9 @@ export function mountAuth({ root, api, mailAction=null, initialScreen='login', n
   }
 
   function showError(error, form=null) {
-    const slot=stage.querySelector('[data-form-error]');
-    if(slot){slot.hidden=false;slot.textContent=error.message || 'انجام این کار ممکن نشد. دوباره تلاش کنید.';}
+    let slot=stage.querySelector('[data-form-error]');
+    if(!slot){slot=document.createElement('div');slot.className='message error';slot.dataset.formError='';slot.setAttribute('role','alert');stage.prepend(slot);}
+    slot.hidden=false;slot.textContent=error.message || 'انجام این کار ممکن نشد. دوباره تلاش کنید.';
     let first=null;
     for(const [name,raw] of Object.entries(error.fields || {})) {
       // API field names are not interpolated into selectors.

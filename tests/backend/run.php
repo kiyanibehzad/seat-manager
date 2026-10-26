@@ -65,6 +65,7 @@ try {
     $db->run('SET FOREIGN_KEY_CHECKS=0'); foreach ($db->all('SHOW TABLES') as $table) { $name=array_values($table)[0]; if (!preg_match('/^[a-z_]+$/',$name)) { throw new RuntimeException('Unexpected table'); } $db->pdo->exec('DROP TABLE `'.$name.'`'); } $db->run('SET FOREIGN_KEY_CHECKS=1');
     check(count((new Migrator($app))->run())===count(glob($root.'/database/migrations/*.sql')),'fresh migrations (stage 1 plus additive migrations)'); check((new Migrator($app))->run()===[],'migration repeat');
     check(!$db->all("SELECT TABLE_NAME FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND ENGINE<>'InnoDB'"),'all tables InnoDB');
+    testPrepareMail($app);
     $secret=testSetupSecret($root);
     expectError(fn()=>(new Installer($app))->install('wrong',[]),403,'installer protected');
     (new Installer($app))->install($secret,['email'=>'admin@example.test','first_name'=>'مدیر','last_name'=>'آزمایش','department_name'=>'فنی']);
@@ -195,8 +196,12 @@ try {
     $stats=worker($app); check($stats['sent']===1,'SMTP sink delivery'); check(sinkCount($root)===$count+1,'single sink message');
     check(worker($app)['sent']===0&&sinkCount($root)===$count+1,'worker rerun no duplicate');
     check($db->one('SELECT payload_encrypted FROM mail_outbox WHERE id=?',[$mailId])['payload_encrypted']===null,'sent secret payload erased');
-    $saved=$app->config['smtp']['host']; $app->config['smtp']['host']='example.invalid';
-    try { worker($app); throw new RuntimeException('FAIL: external SMTP allowed'); } catch (RuntimeException $e) { check($e->getMessage()==='Development SMTP must use the local sink','development blocks external SMTP'); } $app->config['smtp']['host']=$saved;
+    $saved=$db->one('SELECT settings_encrypted FROM mail_settings WHERE id=1')['settings_encrypted'];
+    $invalidMail=(new AccManager\MailSettings($app))->current(); $invalidMail['smtp_host']='example.invalid';
+    $db->run('UPDATE mail_settings SET settings_encrypted=? WHERE id=1',[$app->crypto->encrypt($invalidMail)]);
+    try { worker($app); throw new RuntimeException('FAIL: external SMTP allowed'); }
+    catch (ApiError $e) { check($e->status===422&&$e->errorCode==='mail_transport_restricted','development blocks external SMTP'); }
+    finally { $db->run('UPDATE mail_settings SET settings_encrypted=? WHERE id=1',[$saved]); }
     file_put_contents($root.'/storage/run/smtp-mode','pre_fail');
     $failureId=$app->mail->enqueue($adminId,'smtp-retry','admin@example.test','Retry test','Retry test');
     check(worker($app)['retry']===1,'pre-delivery retry'); check(worker($app)['retry']===0,'retry waits backoff');

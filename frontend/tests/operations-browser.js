@@ -1,3 +1,4 @@
+import {mailFixture} from './mail-fixtures.js';
 import {fixtures,testPermissions,accessGroupFixtures} from './operations-fixtures.js';
 // Source mode reviews an unbuilt frontend without publishing local product assets.
 const sourceMode=new URL(location.href).searchParams.has('source');
@@ -13,6 +14,7 @@ const {mountTheme}=await import(moduleBase+'theme.js'+version);
 const {themeMarkup,brandMarkup}=await import(moduleBase+'auth-view.js'+version);
 document.querySelector('.app-header .brand').outerHTML=brandMarkup();document.querySelector('#test-theme').innerHTML=themeMarkup();const testTheme=mountTheme();
 let access=accessGroupFixtures();
+const mail=mailFixture();
 let f=fixtures(),role='admin',page='overview',scenario='normal',panel=null,writes=0,readRoutes=[];
 const requests=[f.request,{...f.request,id:502,status:'rejected',rejection_reason:'نتیجهٔ آزمون بررسی درخواست'}];
 const transport={
@@ -31,6 +33,7 @@ const transport={
     const visualRequests=[visualRequest,...requests.slice(1)];
     const visualAccounts=['renewal','renewal-eligible'].includes(scenario)?f.accounts.map(a=>a.id===renewalAccount.id?renewalAccount:a):(scenario==='partial'||capacityPartial)?f.accounts.map(a=>visualOperation.items.find(i=>i.account.id===a.id)?.account||a):f.accounts;
     const visualCapacity=capacityPartial?{...f.capacity,standard:{purchased:3,assigned:0,held:0,free:3},premium:{purchased:2,assigned:2,held:0,free:0}}:scenario==='partial'?{...f.capacity,premium:{...f.capacity.premium,assigned:0,held:1,free:0}}:f.capacity;
+    if(route==='/admin/mail')return mail.read(scenario);
     if(route==='/accounts')return items(visualAccounts.filter(a=>a.owner_id===1));
     if(route==='/requests')return items(visualRequests.filter(r=>r.owner_id===1));
     if(route==='/reasons')return{...items(f.reasons),other_code:'other'};
@@ -53,7 +56,8 @@ const transport={
   },
   async write(route,body,options){
     writes++;document.querySelector('#write-count').textContent=writes+' ثبت آزمایشی';document.querySelector('#write-count').dataset.count=String(writes);
-    document.querySelector('#last-command').textContent=JSON.stringify({route,body,method:options?.method||'POST'});
+    document.querySelector('#last-command').textContent=JSON.stringify({route,body:route.startsWith('/admin/mail')?Object.fromEntries(Object.entries(body).filter(([key])=>key!=='smtp_password')):body,method:options?.method||'POST'});
+    if(route.startsWith('/admin/mail'))return mail.write(route,body,scenario);
     if(scenario==='forbidden')throw Object.assign(Error('دسترسی این کار را ندارید.'),{code:'forbidden',status:403});
     if(route==='/admin/access-groups'){
       const existing=access.items.find(g=>g.id===body.group_id);
@@ -73,7 +77,7 @@ const transport={
     return{};
   },
 };
-function mount(){testTheme.setUser(1);panel?.destroy();readRoutes=[];document.querySelector('#read-routes').textContent='بدون خواندن آزمایشی';panel=mountOperations({container:document.querySelector('#test-panel'),transport,session:{authenticated:true,access_groups_ready:scenario!=='migration',user:{...f.users[0],app_role:['admin','hr','operator','user'].includes(role)?role:'user',access_group_id:({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role],access_group_name:access.items.find(g=>g.id===({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role])?.name,is_super_admin:role==='admin'},permissions:testPermissions(role)},baseUrl:new URL('.',location.href),initialRoute:{page,tab:'pending',day:'today'},navigate:()=>{}});}
+function mount(){testTheme.setUser(1);panel?.destroy();readRoutes=[];document.querySelector('#read-routes').textContent='بدون خواندن آزمایشی';panel=mountOperations({container:document.querySelector('#test-panel'),transport,session:{authenticated:true,access_groups_ready:scenario!=='migration',user:{...f.users[0],app_role:['admin','hr','operator','user'].includes(role)?role:'user',access_group_id:({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role],access_group_name:access.items.find(g=>g.id===({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role])?.name,is_super_admin:role==='admin'},permissions:role==='settings'?[...testPermissions('user'),'settings.manage']:testPermissions(role)},baseUrl:new URL('.',location.href),initialRoute:{page,tab:'pending',day:'today'},navigate:()=>{}});}
 for(const [selector,assign]of [['#test-role',v=>role=v],['#test-page',v=>page=v],['#test-state',v=>scenario=v]])document.querySelector(selector).addEventListener('change',event=>{assign(event.target.value);mount();});
 document.querySelector('#audit-dates').addEventListener('click',()=>{const form=document.querySelector('[data-op-form]');document.querySelector('#date-audit').textContent=JSON.stringify({nativeReportValidity:form?.reportValidity(),dates:Array.from(form?.querySelectorAll('[data-jalali]')||[]).map(input=>({name:input.name,readOnly:input.readOnly,willValidate:input.willValidate,value:input.value,invalid:input.getAttribute('aria-invalid')}))});});
 mount();

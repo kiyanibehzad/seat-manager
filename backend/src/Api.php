@@ -6,7 +6,7 @@ final class Api
     private const ROUTES = [
         '/health'=>'GET','/session'=>'GET','/login'=>'POST','/logout'=>'POST','/register'=>'POST','/verify'=>'POST','/resend-verification'=>'POST','/forgot'=>'POST','/reset'=>'POST','/change-password'=>'POST',
         '/notifications'=>'GET','/notifications/read'=>'POST','/notifications/read-all'=>'POST','/admin/registrations'=>'GET','/admin/registrations/approve'=>'POST','/admin/registrations/reject'=>'POST',
-        '/admin/users'=>'GET,POST,PATCH','/admin/access-groups'=>'GET,POST,PATCH','/admin/users/access-group'=>'POST','/admin/users/status'=>'POST','/admin/users/role'=>'POST','/departments'=>'GET','/admin/departments'=>'POST','/admin/settings'=>'GET,POST',
+        '/admin/users'=>'GET,POST,PATCH','/admin/access-groups'=>'GET,POST,PATCH','/admin/users/access-group'=>'POST','/admin/users/status'=>'POST','/admin/users/role'=>'POST','/departments'=>'GET','/admin/departments'=>'POST','/admin/settings'=>'GET,POST','/admin/mail'=>'GET,POST','/admin/mail/test-connection'=>'POST','/admin/mail/send-test'=>'POST','/admin/mail/retry'=>'POST',
     ];
     public function __construct(private App $app) {}
     public function handle(): array
@@ -55,6 +55,15 @@ final class Api
                 $rows=$this->app->db->all('SELECT id,name,base_score FROM departments ORDER BY name');
                 foreach ($rows as &$row) { $row['id']=(int)$row['id']; $row['base_score']=(int)$row['base_score']; } unset($row);
                 return [200,['items'=>$rows]];
+        }
+        if ($route==='/admin/mail'||str_starts_with($route,'/admin/mail/')) {
+            $mail=new MailSettings($this->app);
+            return [200,match ($route) {
+                '/admin/mail'=>$method==='GET'?$mail->view($user):$mail->save($data,$user),
+                '/admin/mail/test-connection'=>$mail->connection($data,$user),
+                '/admin/mail/send-test'=>$mail->sendTest($data,$user),
+                '/admin/mail/retry'=>$mail->retry($data,$user),
+            }];
         }
         if (isset(\AccManager\Operations\Api::ROUTES[$route])) { return (new \AccManager\Operations\Api($this->app))->handle($route,$method,$data,$user); }
         if (in_array($route,['/admin/access-groups','/admin/users/access-group'],true)) { $this->app->accessGroups->requireReady(); }

@@ -12,9 +12,9 @@ try {
  if ($app->config['environment']!=='test'||$db->one('SELECT DATABASE() n')['n']!=='acc_manager_test') { throw new RuntimeException('Test DB guard'); }
  $db->run('SET FOREIGN_KEY_CHECKS=0'); foreach ($db->all('SHOW TABLES') as $r) { $name=array_values($r)[0]; if (!preg_match('/^[a-z_]+$/',$name)) { throw new RuntimeException('Table guard'); } $db->pdo->exec('DROP TABLE `'.$name.'`'); } $db->run('SET FOREIGN_KEY_CHECKS=1');
  (new Migrator($app))->run();
- (new Installer($app))->install(trim(file_get_contents('storage/run/setup-token.txt')),['email'=>'qa-admin@example.test','first_name'=>'مدیرکل','last_name'=>'آزمایشی','department_name'=>'عمومی']);
- $row=$db->one("SELECT * FROM users WHERE app_role='admin'"); $adminId=(int)$row['id']; $general=(int)$row['department_id'];
  $qaPassword='Local-QA-8788-Only-2026!';
+ (new Installer($app))->install(trim(file_get_contents('storage/run/setup-token.txt')),['email'=>'qa-admin@example.test','first_name'=>'مدیرکل','last_name'=>'آزمایشی','department_name'=>'عمومی','password'=>$qaPassword,'password_confirm'=>$qaPassword]);
+ $row=$db->one("SELECT * FROM users WHERE app_role='admin'"); $adminId=(int)$row['id']; $general=(int)$row['department_id'];
  $access=[['role'=>'admin','email'=>$row['email'],'password'=>$qaPassword]]; $identities=['admin'=>$adminId];
  $db->run("INSERT INTO departments(name,base_score) VALUES('فناوری',5)"); $technical=(int)$db->pdo->lastInsertId();
  foreach ([['operator','اپراتور','حساب‌ها','operator',$general,'employee',false],['hr','منابع','انسانی','hr',$general,'employee',false],['alice','آزاده','آزمایشی','user',$technical,'supervisor',false],['bob','بهرام','آزمایشی','user',$general,'employee',false],['cara','کتایون','آزمایشی','user',$general,'employee',true],['dora','داریوش','آزمایشی','user',$general,'employee',false]] as [$key,$first,$last,$role,$department,$position,$special]) {

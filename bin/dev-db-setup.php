@@ -35,7 +35,10 @@ file_put_contents($root.'/storage/run/subfolder-config.php','<?php return '.var_
 $app=AccManager\App::boot($root);
 (new AccManager\Migrator($app))->run();
 if (!(int)$app->db->one('SELECT COUNT(*) n FROM users')['n']) {
-    (new AccManager\Installer($app))->install(trim(file_get_contents($root.'/storage/run/setup-token.txt')),['email'=>'admin@example.test','first_name'=>'مدیر','last_name'=>'آزمایشی','department_name'=>'بخش آزمایشی']);
+    $firstPassword=bin2hex(random_bytes(16));
+    (new AccManager\Installer($app))->install(trim(file_get_contents($root.'/storage/run/setup-token.txt')),['email'=>'admin@example.test','first_name'=>'مدیر','last_name'=>'آزمایشی','department_name'=>'بخش آزمایشی','password'=>$firstPassword,'password_confirm'=>$firstPassword]);
+    file_put_contents($root.'/storage/dev-access.txt',"LOCAL TEST ONLY — never use in production\nURL: ".$config['app_url']."/\nEmail: admin@example.test\nPassword: ".$firstPassword."\n");
+    chmod($root.'/storage/dev-access.txt',0600);
 }
 $accessPath=$root.'/storage/dev-access.txt';
 if (!is_file($accessPath)) {

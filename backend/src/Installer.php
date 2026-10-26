@@ -32,9 +32,9 @@ final class Installer
         $chosen=array_key_exists('password',$data)||array_key_exists('password_confirm',$data);
         $password=$chosen?Input::password($data):null;
         if ($chosen&&(!is_string($data['password_confirm']??null)||!hash_equals($password,$data['password_confirm']))) { Input::invalid('password_confirm','تکرار رمز عبور یکسان نیست.'); }
-        if (!$chosen&&!$this->app->config['smtp']['enabled']) { throw new ApiError(422,'validation_failed','رمز مدیر کل را انتخاب کنید یا ابتدا ارسال ایمیل را پیکربندی کنید.'); }
         $email=Input::email($data); $first=Input::text($data,'first_name'); $last=Input::text($data,'last_name'); $department=Input::text($data,'department_name',120);
         (new Migrator($this->app))->run();
+        if (!$chosen&&!(new MailSettings($this->app))->current()['delivery_enabled']) { throw new ApiError(422,'validation_failed','رمز مدیر کل را انتخاب کنید؛ ارسال خودکار ایمیل هنوز فعال نیست.'); }
         $this->app->db->transaction(function () use ($email,$first,$last,$department,$chosen,$password) {
             $this->app->db->one("SELECT value_json FROM settings WHERE setting_key='identity_guard' FOR UPDATE");
             if ((int)$this->app->db->one('SELECT COUNT(*) n FROM users')['n']!==0) { throw new ApiError(409,'conflict','نصب قبلاً انجام شده است.'); }

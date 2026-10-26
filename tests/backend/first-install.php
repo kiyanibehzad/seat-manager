@@ -78,7 +78,13 @@ try {
     catch (ApiError $e) { fiCheck($e->status===403,'disabled setup rejects valid token'); }
     $legacyDatabase=$database.'_legacy'; $db->exec('CREATE DATABASE `'.$legacyDatabase.'` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $legacy=$config; $legacy['db']['dsn']=str_replace('dbname='.$database.';','dbname='.$legacyDatabase.';',$config['db']['dsn']); $legacy['smtp']['enabled']=true;
-    $legacyApp=new App($scratch,$legacy); (new Installer($legacyApp))->install($token,$identity);
+    $legacyApp=new App($scratch,$legacy);
+    try { (new Installer($legacyApp))->install($token,$identity); throw new RuntimeException('FAIL: new mail defaults bypassed'); }
+    catch (ApiError $e) { fiCheck($e->status===422,'fresh install cannot issue inaccessible random password with delivery disabled'); }
+    fiCheck((int)$legacyApp->db->one('SELECT COUNT(*) n FROM users')['n']===0,'disabled delivery creates no inaccessible chief');
+    $prepared=(new AccManager\MailSettings($legacyApp))->current(); $prepared['delivery_enabled']=true;
+    $legacyApp->db->run('UPDATE mail_settings SET settings_encrypted=? WHERE id=1',[$legacyApp->crypto->encrypt($prepared)]);
+    (new Installer($legacyApp))->install($token,$identity);
     $legacyUser=$legacyApp->db->one('SELECT * FROM users'); $legacyMail=$legacyApp->db->one("SELECT payload_encrypted FROM mail_outbox WHERE category='initial_password'");
     fiCheck((int)$legacyUser['access_group_id']===4&&$legacyMail!==null,'legacy setup still creates chief and queues initial-password email');
     $payload=$legacyApp->crypto->decrypt($legacyMail['payload_encrypted']); preg_match('/رمز اولیه: ([a-f0-9]+)/u',$payload['body'],$match);

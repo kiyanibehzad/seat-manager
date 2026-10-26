@@ -14,12 +14,12 @@ A Persian-first internal web application for requesting and managing OpenAI acco
 - A daily work desk, full seat/request queues and independent registration review; personal accounts and private history for every group.
 - Purchased/assigned/held/free capacity, conditional waiting-time estimates and an audit trail.
 - Corporate-domain registration, email verification and approval by an authorized reviewer; password recovery.
-- In-app notifications, queued SMTP email and temporary Premium reminders.
-- Persian RTL interface, Jalali dates, Iran time, and light/dark/system themes.
+- In-app notifications, queued email and temporary Premium reminders; chief-only SMTP sender settings, explicit connection/send tests and queue/scheduler status.
+- Persian RTL interface, Jalali date pickers, Iran time, light/dark/system themes and personal color palettes.
 
 ## Status
 
-The frontend and backend are integrated. A combined offline release builder and a one-time first-administrator setup page are available. The host still needs its own private database/configuration, HTTPS and reminder schedule; SMTP is configured separately. Initial setup lets the owner choose an email and password without waiting for email delivery. There is no default login.
+The frontend and backend are integrated. A combined offline release builder and a one-time first-administrator setup page are available. Each installation needs its own private database/configuration, HTTPS and reminder schedule. The chief configures the sender in Settings, explicitly tests delivery and then enables automatic email. Fresh installations and the email-settings upgrade default automatic delivery off. Initial setup lets the owner choose an email and password without waiting for email delivery. There is no default login.
 
 ## Build and run locally
 
@@ -55,7 +55,7 @@ IRANSans files are not distributed in this public repository. The interface uses
 node --test frontend/tests/*.test.mjs
 ```
 
-Backend integration tests use a separate test database; some deliberately recreate its contents. Do not run them against a database whose contents you need to preserve. See [setup](docs/SETUP.md), [identity API](docs/backend/API.md), [permission groups](docs/backend/ACCESS-GROUPS-CONTRACT.md), [operations API](docs/backend/API-OPERATIONS.md) and [operational behavior](docs/backend/OPERATIONS.md).
+Backend integration tests use a separate test database; some deliberately recreate its contents. Do not run them against a database whose contents you need to preserve. See [setup](docs/SETUP.md), [identity API](docs/backend/API.md), [permission groups](docs/backend/ACCESS-GROUPS-CONTRACT.md), [operations API](docs/backend/API-OPERATIONS.md), [operational behavior](docs/backend/OPERATIONS.md) and [email setup and delivery](docs/backend/MAIL.md).
 
 ## License
 

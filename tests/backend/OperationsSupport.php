@@ -30,6 +30,14 @@ function testDatabaseGuard(\AccManager\App $app,bool $http=false): void {
   if ($status!==200||($body['data']['app_url']??null)!==$base) { throw new RuntimeException('Intended isolated HTTP server is unavailable or mismatched'); }
  }
 }
+// These legacy fixtures deliberately test generated-password email. A fresh real
+// installation still defaults delivery OFF; opt in only inside the guarded test DB.
+function testPrepareMail(\AccManager\App $app): void {
+ testDatabaseGuard($app); $mail=new \AccManager\MailSettings($app);
+ if (!$mail->ready()) { return; }
+ $settings=$mail->current(); $settings['delivery_enabled']=(bool)$app->config['smtp']['enabled'];
+ $app->db->run('UPDATE mail_settings SET settings_encrypted=? WHERE id=1',[$app->crypto->encrypt($settings)]);
+}
 function testSetupSecret(string $root): string {
  $path=getenv('ACC_TEST_SETUP_TOKEN_PATH');
  if (getenv('ACC_TEST_CONFIG')&&(!$path||!str_starts_with((string)realpath($path),(string)realpath($root.'/work').DIRECTORY_SEPARATOR))) { throw new RuntimeException('Independent setup token must remain under work/'); }

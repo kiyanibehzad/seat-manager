@@ -15,7 +15,7 @@ final class RateLimiter
     public function consume(string $scope, string $identity, int $limit, int $seconds = 900): void
     {
         $key=$this->key($scope,$identity);
-        $allowed=$this->app->db->transaction(function () use ($key,$limit,$seconds) {
+        $consume=function () use ($key,$limit,$seconds) {
             $db=$this->app->db;
             $db->run('INSERT IGNORE INTO rate_limits(bucket,window_started) VALUES(?,UTC_TIMESTAMP())',[$key]);
             $row=$db->one('SELECT * FROM rate_limits WHERE bucket=? FOR UPDATE',[$key]);
@@ -24,7 +24,9 @@ final class RateLimiter
             }
             if ((int)$row['attempts']>=$limit) { return false; }
             $db->run('UPDATE rate_limits SET attempts=attempts+1 WHERE bucket=?',[$key]); return true;
-        });
+        };
+        // Administrative commands may already hold the identity transaction.
+        $allowed=$this->app->db->pdo->inTransaction()?$consume():$this->app->db->transaction($consume);
         if (!$allowed) { $this->denied(); }
     }
 }

@@ -12,6 +12,7 @@ try {
  opCheck(hash_file('sha256','database/migrations/001_identity.sql')==='3ab79406fc5622b9ecdcf63d98f16ba884fc0871fc9aae6f5b78567f58b04642','stage 1 migration frozen');
  $db->run('SET FOREIGN_KEY_CHECKS=0'); foreach ($db->all('SHOW TABLES') as $table) { $name=array_values($table)[0]; if (!preg_match('/^[a-z_]+$/',$name)) { throw new RuntimeException('FAIL: table guard'); } $db->pdo->exec('DROP TABLE `'.$name.'`'); } $db->run('SET FOREIGN_KEY_CHECKS=1');
  opCheck(count((new Migrator($app))->run())===count(glob($root.'/database/migrations/*.sql')),'all migrations on fresh real database');
+ testPrepareMail($app);
  (new Installer($app))->install(testSetupSecret($root),['email'=>'ops-admin@example.test','first_name'=>'مدیر','last_name'=>'آزمون','department_name'=>'عمومی']);
  $adminRow=$db->one("SELECT * FROM users WHERE email='ops-admin@example.test'"); $adminId=(int)$adminRow['id'];
  $mail=$db->one("SELECT payload_encrypted FROM mail_outbox WHERE recipient_id=? AND category='initial_password'",[$adminId]); preg_match('/رمز اولیه: ([a-f0-9]+)/u',$app->crypto->decrypt($mail['payload_encrypted'])['body'],$match);

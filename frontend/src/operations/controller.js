@@ -1,3 +1,4 @@
+import {canManageMail,mountMailSettings} from './mail-settings.js';
 import {accessGroupName,accessGroupsModel,accessGroupCommand,accessGroupAssignmentCommand,toggleCapabilities,formPermission} from './access.js';
 import {pageTitle} from '../brand.js';
 import {ApiError} from '../auth-api.js';
@@ -16,6 +17,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   container.innerHTML='<div class="acc-operations" id="operations-root"><section class="sm-product"><div data-op-navigation></div><div class="sm-toast" data-op-notice role="status" hidden></div><div class="sm-content" id="mg-content" role="region" aria-label="محتوای پنل" aria-live="polite"></div></section></div>';
   const root=container.querySelector('.acc-operations'),content=root.querySelector('#mg-content'),notice=root.querySelector('[data-op-notice]');
   let route=initialRoute||routeFromUrl(location.href,permissions),data={},form=null,context=null,loadAbort=null,loadSequence=0,destroyed=false,writing=false,uncertain=null,previous=[];
+  let mailPanel=null;
   let expandedUser=null,bulkRows=[],bulkPreview=null,reasonDraft=null;
   const picker=mountJalaliPicker({root,getBounds:dateBounds});
   const headerTools=document.querySelector('.app-header .header-tools');
@@ -64,7 +66,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     const anchor=preserveUserRow?Array.from(content.querySelectorAll('[data-op-action="expand-user"]')).find(b=>Number(b.dataset.id)===preserveUserRow):null;
     const anchorTop=anchor?.getBoundingClientRect().top,contentHeight=anchor?content.getBoundingClientRect().height:null;
     content.style.minHeight=contentHeight===null?'':contentHeight+'px';
-    const sequence=++loadSequence;loadAbort?.abort();loadAbort=new AbortController();const signal=loadAbort.signal;picker.close(false);form=null;context=null;data={};reasonDraft=null;notify('');
+    mailPanel?.destroy();mailPanel=null;const sequence=++loadSequence;loadAbort?.abort();loadAbort=new AbortController();const signal=loadAbort.signal;picker.close(false);form=null;context=null;data={};reasonDraft=null;notify('');
     syncWorkspace();root.querySelector('[data-op-navigation]').innerHTML=views.panelNavigation(route,permissions);content.innerHTML=heading(views.pageTitles[route.page]||'')+'<p class="sm-small" role="status">در حال دریافت اطلاعات…</p>';updateTitle();
     try{
       let result={};
@@ -95,7 +97,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   }
   function routeTo(next,{remember=true}={}){if(writing)return;if(remember)previous.push({...route});route={tab:'pending',day:'today',...next};expandedUser=null;navigate(routeUrl(baseUrl,route));void load();}
   function render(){
-    if(destroyed)return;picker.close(false);let html='';
+    if(destroyed)return;mailPanel?.destroy();mailPanel=null;picker.close(false);let html='';
     if(data.request)html=views.requestDetailView(data.request,{personal:['accounts','requests'].includes(route.page),history:data.history});
     else if(data.operation)html=views.operationDetailView(data.operation,{history:data.history,canCapacity:can('capacity.manage'),formOpen:!!form})+(data.relatedRequests?.length?'<section class="sm-detail"><h2>درخواست‌های مرتبط همین حساب‌ها</h2>'+notices(['درخواست مرتبط خودکار رد یا لغو نمی‌شود؛ پس از تغییر حساب، بازبینی آن لازم است.'])+views.requestListView(data.relatedRequests)+'</section>':'');
     else if(route.page==='accounts')html=views.personalAccountsView({...data,user:session.user})+(data.historyNext?button('سوابق بیشتر','more-history',data.historyNext):'');
@@ -104,12 +106,13 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     else if(route.page==='registrations')html=views.signupsView(data.users,{canManagePeople:can('people.manage')});
     else if(route.page==='users')html=route.bulk?bulkMarkup({rows:bulkRows,departments:data.departments,preview:bulkPreview}):views.usersView({...data,accounts:data.adminAccounts||[],expanded:expandedUser,canOperate:can('seats.manage'),canReviewSignups:can('registrations.review'),canManageScores:can('departments.manage')});
     else if(route.page==='departments')html=views.departmentsView(data.departments);
-    else if(route.page==='settings')html=views.settingsView({...data,reasons:reasonDraft||data.reasons});
+    else if(route.page==='settings')html=views.settingsView({...data,reasons:reasonDraft||data.reasons,canManageMail:canManageMail(session)});
     else if(route.page==='finance')html=views.financeView(data.finance,data.capacity)+(data.next?button('سوابق بیشتر','more-finance',data.next):'');
     else if(data.selected)html=views.adminAccountView(data.selected,{history:data.history,canCapacity:can('capacity.manage')})+(data.historyNext?button('سوابق بیشتر','more-history',data.historyNext):'');
     else if(route.page==='seats'){html=heading('سیت‌ها و درخواست‌ها','',can('capacity.manage')?button('ویرایش تعداد خریداری‌شده','capacity'):'' )+(data.capacity?capacityMarkup(data.capacity.rows):'')+`<nav class="sm-tabs">${[['pending','درخواست‌های جدید'],['renewals','تمدیدها'],['ongoing','در حال انجام'],['history','سوابق'],['accounts','حساب‌های کاربران']].map(([id,label])=>button(label,'seat-tab',id,{extra:`aria-pressed="${route.tab===id}"`})).join('')}</nav>`+(route.tab==='accounts'?views.accountListView(data.adminAccounts,{next:data.next}):data.operations?(views.operationListView(data.operations,{next:data.next})+(data.historyRequests?'<section class="mg-subsection"><h2>همهٔ درخواست‌ها و نتیجه‌های بررسی</h2>'+views.requestListView(data.historyRequests)+(data.requestsNext?button('درخواست‌های قدیمی‌تر','more-request-history',data.requestsNext):'')+'</section>':'')):views.requestListView(route.tab==='renewals'?data.renewals:data.requests));}
     content.innerHTML=html;
     if(form){const work=data.operation?content.querySelector('.op-detail-work'):null,element=content.querySelector('.sm-titlebar');if(work)work.insertAdjacentHTML('beforeend',form);else if(element)element.insertAdjacentHTML('afterend',form);else content.insertAdjacentHTML('afterbegin',form);}
+    if(route.page==='settings'&&canManageMail(session)){const slot=content.querySelector('[data-mail-panel]');if(slot)mailPanel=mountMailSettings({root:slot,transport});}
     updateTitle();picker.enhance();syncForms();
   }
   function openForm(kind,record=null){
@@ -216,5 +219,5 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   root.addEventListener('input',event=>{if(event.target.closest('[data-bulk-row]')){bulkPreview=null;content.querySelector('[data-op-action="bulk-commit"]')?.remove();const status=content.querySelector('[data-bulk-preview-status]');if(status)status.textContent='ردیف تغییر کرد؛ دوباره بررسی کنید.';}},{signal:lifecycle.signal});
   root.addEventListener('paste',event=>{if(!event.target.matches('[data-bulk-paste]'))return;event.preventDefault();bulkRows=parsePastedUsers(event.clipboardData.getData('text'),data.departments);bulkPreview=null;render();},{signal:lifecycle.signal});
   void load();
-  return {navigate:next=>routeTo(next),destroy(){destroyed=true;++loadSequence;loadAbort?.abort();lifecycle.abort();picker.destroy();profile.remove();if(headerContext)headerContext.replaceWith(headerBrand);uncertain=null;data={};bulkRows=[];bulkPreview=null;reasonDraft=null;}};
+  return {navigate:next=>routeTo(next),destroy(){destroyed=true;++loadSequence;loadAbort?.abort();lifecycle.abort();picker.destroy();mailPanel?.destroy();profile.remove();if(headerContext)headerContext.replaceWith(headerBrand);uncertain=null;data={};bulkRows=[];bulkPreview=null;reasonDraft=null;}};
 }
