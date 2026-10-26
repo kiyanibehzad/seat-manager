@@ -1,15 +1,13 @@
-.app-footer{display:grid;grid-template-columns:minmax(0,1fr);justify-content:normal;gap:10px;padding:18px 32px;border-top:1px solid var(--line);background:var(--chrome);color:var(--muted);font-size:13px;line-height:1.9}
-.site-footer-main,.site-footer-bottom{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:8px 24px;min-width:0}
-.site-footer-identity{display:flex;align-items:baseline;flex-wrap:wrap;gap:4px 12px;min-width:0}
-.site-footer-name{color:var(--text);font-size:14px;font-weight:700}
-.site-footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:8px 18px}
-.site-footer-link{display:inline-flex;align-items:center;gap:4px;min-height:28px;max-width:100%;color:var(--text);font-weight:500;text-decoration:none;text-underline-offset:4px}
+.app-footer{display:flex;align-items:center;justify-content:space-between;flex-wrap:wrap;gap:4px 24px;padding:8px 32px;border-top:1px solid var(--line);background:var(--chrome);color:var(--muted);font-size:12px;line-height:1.6}
+.site-footer-details{display:flex;align-items:center;flex-wrap:wrap;gap:4px 18px;min-width:0}
+.site-footer-links{display:flex;align-items:center;flex-wrap:wrap;gap:4px 18px}
+.site-footer-link{display:inline-flex;align-items:center;gap:4px;min-height:24px;max-width:100%;color:inherit;font-weight:500;text-decoration:none;text-underline-offset:4px}
 .site-footer-link:hover{text-decoration:underline;color:var(--text)}
 .site-footer-link:focus-visible{outline:2px solid var(--text);outline-offset:3px;border-radius:2px}
 .site-footer-external{width:12px;height:12px;flex:none;fill:none;stroke:currentColor;stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round;opacity:.7}
 .site-footer-credit{margin:0;min-width:0}
-.site-footer-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 12px;font-size:12px}
+.site-footer-meta{display:flex;align-items:center;flex-wrap:wrap;gap:4px 10px;font-size:11px}
 .site-footer-meta>span{white-space:nowrap}
-.site-footer-meta>span+span{border-inline-start:1px solid var(--line);padding-inline-start:12px}
-@media(max-width:760px){.app-footer{padding:16px 20px;gap:8px}.site-footer-main,.site-footer-bottom{align-items:flex-start;gap:6px 16px}.site-footer-bottom{flex-direction:column}}
+.site-footer-meta>span+span{border-inline-start:1px solid var(--line);padding-inline-start:10px}
+@media(max-width:760px){.app-footer{padding:8px 20px;gap:4px 16px}.site-footer-details{gap:4px 14px}}
 @media(pointer:coarse){.site-footer-link{min-height:44px}}

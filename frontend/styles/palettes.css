@@ -97,9 +97,10 @@
 .acc-operations .sm-product :is(.sm-data-table,.sm-daily-worklist)>tbody>tr:not(.sm-user-account-detail)>td:last-child .sm-button{color:var(--accent-text);background:var(--accent-soft);border-color:color-mix(in srgb,var(--accent) 35%,var(--line))}
 .acc-operations .sm-product :is(.sm-data-table,.sm-daily-worklist)>tbody>tr:not(.sm-user-account-detail)>td:last-child .sm-button:hover:not(:disabled){background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
 .acc-operations .sm-product .sm-tabs .sm-tab[aria-selected="true"],.acc-operations .sm-product .sm-tabs .sm-tab[aria-pressed="true"],.acc-operations .sm-product .sm-tabs>.sm-button[aria-pressed="true"]{color:var(--accent-text);background:var(--accent-soft);border-color:var(--accent)}
-.app-footer{background:var(--surface)}
-.site-footer-link{color:var(--accent-text)}
-.site-footer-external{color:var(--companion)}
+.app-footer{background:var(--canvas)}
+.site-footer-link{color:inherit}
+.site-footer-link:hover{color:var(--accent-text)}
+.site-footer-external{color:currentColor}
 .notification-trigger[aria-expanded="true"]{background:var(--accent-soft);border-color:var(--accent);color:var(--accent-text)}
 @media(max-width:760px){
   .app-header{padding:14px 16px;gap:12px;flex-wrap:wrap}
