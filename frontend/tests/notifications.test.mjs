@@ -97,6 +97,20 @@ test('dates use Persian calendar/Iran timezone and untrusted text is escaped',()
   for(const data of [{items:[],unread_count:-1,next_before_id:null},{items:[item(1),item(1)],unread_count:1,next_before_id:null},{items:[{...item(1),created_at:'invalid'}],unread_count:1,next_before_id:null}])assert.throws(()=>validateNotificationPage(data),error=>error.code==='invalid_response');
 });
 
+test('notification cards keep title/time in the header and read/navigation actions separate from body',()=>{
+  const base='https://example.test/tools/accounts/',items=[item(1),{...item(2,'2026-10-24T15:00:00Z'),title:'اعلان خوانده‌شده'}];
+  const html=notificationPanelMarkup({...page(items,1),open:true,writing:true},{baseUrl:base,navigation:{canHandle:()=>true}});
+  assert.equal((html.match(/class="notification-item"/g)||[]).length,2);
+  for(const card of html.matchAll(/<li class="notification-item"[^>]*>(.*?)<\/li>/gs)){
+    const content=card[1],time=content.indexOf('<time '),body=content.indexOf('class="notification-body"'),actions=content.indexOf('class="notification-item-actions"');
+    assert(time>content.indexOf('class="notification-item-heading"')&&time<body&&body<actions);
+    assert(!content.slice(0,actions).includes('data-notification-action='));
+  }
+  assert(html.includes('data-notification-action="read" data-notification-id="1" disabled'));
+  assert(!html.includes('data-notification-action="read" data-notification-id="2"'));
+  assert(html.includes('notification-read-label'));assert.equal((html.match(/data-notification-action="navigate"/g)||[]).length,2);
+});
+
 test('real API contract: nested GET cursor plus CSRF-protected read/read-all and no POST replay',async()=>{
   const calls=[],queue=[response(session(1)),response({items:[item(1)],unread_count:1,next_before_id:null}),response({updated:true}),failure('csrf_invalid'),response(session(1))];
   const transport=createAuthApi({baseUrl:'https://example.test/tools/accounts/',fetchImpl:async(url,options)=>{calls.push({url:new URL(url),options});return queue.shift();}});

@@ -4,7 +4,7 @@ import { notificationButtonMarkup, notificationPanelMarkup } from './notificatio
 
 export function mountNotifications({slot,api,baseUrl,navigation=null}) {
   const store=createNotificationStore({api:createNotificationApi(api),sessionApi:api,isVisible:()=>document.visibilityState==='visible'});
-  let previous=null;
+  let previous=null,panelScrollTop=0;
   function positionPanel(){
     const panel=slot.querySelector('.notification-panel');if(!panel||panel.hidden)return;
     const viewport=document.documentElement.clientWidth;
@@ -15,6 +15,9 @@ export function mountNotifications({slot,api,baseUrl,navigation=null}) {
     panel.style.maxHeight=`${Math.max(160,innerHeight-anchor.bottom-24)}px`;
   }
   const unsubscribe=store.subscribe(state=>{
+    const samePanel=state.open&&previous?.open&&state.userId===previous.userId;
+    if(!samePanel)panelScrollTop=0;
+    else if(!['loading','error'].includes(previous.status))panelScrollTop=slot.querySelector('.notification-panel')?.scrollTop??0;
     const active=document.activeElement;
     const wasInside=slot.contains(active);
     const focusAction=wasInside?active?.dataset.notificationAction:null;
@@ -28,6 +31,7 @@ export function mountNotifications({slot,api,baseUrl,navigation=null}) {
       const next=Array.from(slot.querySelectorAll('[data-notification-action]')).find(el=>el.dataset.notificationAction===focusAction&&el.dataset.notificationId===focusId&&!el.disabled);
       (next || slot.querySelector(`[data-notification-action="${state.open?'close':'toggle'}"]`))?.focus({preventScroll:true});
     }
+    if(state.open){const panel=slot.querySelector('.notification-panel');if(panel)panel.scrollTop=panelScrollTop;}
     previous=state;
   });
   function close({restore=false}={}){store.close();if(restore)slot.querySelector('[data-notification-action="toggle"]')?.focus({preventScroll:true});}

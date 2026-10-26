@@ -105,19 +105,24 @@ input{border-radius:4px}
 .notification-status,.notification-error{font-size:13px;line-height:1.95;padding-block:12px;overflow-wrap:anywhere}
 .notification-status:empty{display:none}
 .notification-error{color:var(--error)}
-.notification-list{list-style:none;padding:0;margin:0}
-.notification-item{padding:16px 0;border-bottom:1px solid var(--line)}
-.notification-item:last-child{border-bottom:0}
-.notification-item-heading{display:flex;align-items:baseline;justify-content:space-between;gap:12px}
-.notification-item h3{margin:0;font-size:14px;font-weight:500;line-height:1.85;overflow-wrap:anywhere}
-.notification-body{font-size:13px;line-height:1.95;white-space:pre-wrap;overflow-wrap:anywhere;margin-top:6px}
-.notification-item time{display:block;color:var(--muted);font-size:11px;margin-top:8px}
-.notification-unread-label{font-size:11px;font-weight:500;flex-shrink:0;color:var(--text)}
-.notification-item-actions{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-top:4px}
-.notification-read-label{font-size:11px;color:var(--muted)}
+.notification-list{display:grid;gap:12px;list-style:none;padding:0;margin:12px 0 0;min-width:0}
+.notification-item{min-width:0;border:1px solid var(--line);border-radius:10px;background:var(--bg);overflow:hidden}
+.notification-item[data-unread="true"]{border-color:color-mix(in srgb,var(--strong) 45%,var(--line))}
+.notification-item-heading{display:grid;gap:5px;padding:12px 14px 10px;border-bottom:1px solid var(--line);background:var(--raised,var(--chrome))}
+.notification-item[data-unread="true"] .notification-item-heading{background:var(--accent-soft,var(--canvas))}
+.notification-item-title{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;min-width:0}
+.notification-item h3{flex:1;min-width:0;margin:0;font-size:14.5px;font-weight:700;line-height:1.8;overflow-wrap:anywhere}
+.notification-item:not([data-unread]) h3{font-weight:500}
+.notification-body{padding:12px 14px;font-size:14px;line-height:1.85;white-space:pre-wrap;overflow-wrap:anywhere;unicode-bidi:plaintext;text-align:start}
+.notification-item time{display:block;color:var(--muted);font-size:12px;line-height:1.7;overflow-wrap:anywhere}
+.notification-unread-label{flex:none;margin-top:2px;padding:1px 7px;border-radius:5px;background:var(--bg);color:var(--accent-text,var(--text));font-size:11px;font-weight:500;line-height:1.8}
+.notification-item-actions{display:flex;align-items:center;justify-content:flex-start;flex-wrap:wrap;gap:8px;padding:9px 14px;border-top:1px solid var(--line);background:var(--canvas)}
+.notification-item-actions .notification-text-button{min-height:34px;padding:4px 10px;border:1px solid var(--line);border-radius:6px;background:var(--bg);color:var(--accent-text,var(--text));font-size:13px;line-height:1.7;text-decoration:none}
+.notification-item-actions .notification-text-button:hover:not(:disabled){background:var(--hover);color:var(--text);border-color:var(--strong)}
+.notification-read-label{font-size:12px;color:var(--muted);margin-inline-end:auto}
 .notification-more{display:block;width:100%;min-height:36px;padding:6px 10px;border:1px solid var(--line);border-radius:4px;background:var(--bg);color:var(--text);font-size:13px;margin-top:12px}
 .notification-more:hover:not(:disabled){background:var(--hover)}
-@media(pointer:coarse){.notification-trigger{width:44px;height:44px}.notification-close{width:44px;height:44px}.notification-text-button,.notification-more{min-height:44px}}
+@media(pointer:coarse){.notification-trigger{width:44px;height:44px}.notification-close{width:44px;height:44px}.notification-text-button,.notification-more,.notification-item-actions .notification-text-button{min-height:44px}}
 .preview-tools{display:flex;gap:16px;align-items:center;justify-content:space-between;flex-wrap:wrap;padding:14px 24px;background:var(--canvas);border-bottom:1px solid var(--line);font-size:13px}
 .preview-tools label{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
 .preview-tools select{padding:6px;max-width:100%;color:var(--text);background:var(--field);border:1px solid var(--line);border-radius:4px}
