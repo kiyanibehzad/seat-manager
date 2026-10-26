@@ -11,8 +11,8 @@ try {
     if (!$parent||!is_dir($parent)||$parent===$public||str_starts_with($parent,$public.'/')) { throw new RuntimeException('The archive must be outside public_html in an existing directory.'); }
     $destination=$parent.'/'.basename($target);
     if (file_exists($destination)||is_link($destination)) { throw new RuntimeException('The output already exists.'); }
-    $fixed=['backend/bootstrap.php','backend/composer.json','backend/composer.lock','bin/cron.php','bin/migrate.php','config/app.example.php','docs/SETUP.md','public_html/index.html','public_html/install.html'];
-    $directories=['backend/src','backend/vendor','database/migrations','docs/backend','public_html/assets','public_html/api'];
+    $fixed=['backend/bootstrap.php','backend/composer.json','backend/composer.lock','bin/cron.php','bin/migrate.php','config/app.example.php','docs/SETUP.md','docs/backend/API.md','docs/backend/API-OPERATIONS.md','docs/backend/OPERATIONS.md','docs/backend/INSTALL.md','docs/backend/ACCESS-GROUPS-CONTRACT.md','public_html/index.html','public_html/install.html'];
+    $directories=['backend/src','backend/vendor','database/migrations','public_html/assets','public_html/api'];
     $files=[];
     $safeSource=static function(string $relative) use ($root): string {
         $source=$root.'/'.$relative;
