@@ -21,6 +21,12 @@ A Persian-first internal web application for requesting and managing OpenAI acco
 
 The frontend and backend are integrated. A combined offline release builder and a one-time first-administrator setup page are available. Each installation needs its own private database/configuration, HTTPS and reminder schedule. The chief configures the sender in Settings, explicitly tests delivery and then enables automatic email. Fresh installations and the email-settings upgrade default automatic delivery off. Initial setup lets the owner choose an email and password without waiting for email delivery. There is no default login.
 
+## Download and install on hosting
+
+Download **`seat-manager-v0.1.0-beta.1.zip`** from [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.1). This ready-to-install beta includes built frontend assets and PHP dependencies; **Node.js and Composer are not needed on the hosting account**. The separate `SHA256SUMS.txt` file verifies the download. GitHub's automatic “Source code” archives are for development and do not contain these prepared dependencies.
+
+نسخهٔ آمادهٔ نصب را از بخش **Assets** در صفحهٔ بالا دریافت کنید. فایل ZIP شامل رابط ساخته‌شده، وابستگی‌های PHP، فونت فارسی وزیرمتن و راهنمای نصب است. فونت از خود برنامه بارگذاری می‌شود و نیازی به نصب فونت روی سیستم یا اتصال به CDN ندارد. فقط `public_html/` باید در دسترس وب باشد؛ دیتابیس، تنظیمات خصوصی و اولین مدیر را برای نصب خودتان طبق [راهنمای نصب](docs/backend/INSTALL.md) آماده کنید. نام کاربری یا رمز پیش‌فرض وجود ندارد. این نسخه آزمایشی است و داده یا تنظیمات نصب دیگری را همراه ندارد.
+
 ## Build and run locally
 
 Runtime: **PHP 8.3+**, PDO MySQL, OpenSSL, mbstring, sessions and a MySQL/MariaDB database using InnoDB and utf8mb4. Composer and Node.js are development/build tools; they are not required on the hosting account when prepared dependencies and built assets are deployed.
@@ -45,9 +51,21 @@ php tests/backend/release-package.php /absolute/new-seat-manager-release.zip
 
 Only `public_html/` is public. The archive includes no real configuration, installation key or local data. Follow [the installation guide](docs/backend/INSTALL.md) before opening `/install.html` to create the first administrator.
 
+For a **publicly distributable** archive, use public mode to bundle the included Vazirmatn web fonts even when a developer has optional private fonts installed:
+
+```sh
+node frontend/build.mjs --public
+php bin/build-release.php --public /absolute/new-seat-manager-public.zip
+php tests/backend/release-package.php --public /absolute/new-seat-manager-public.zip
+```
+
+Public mode accepts only the pinned Vazirmatn font files and their accompanying license/author notices, and rejects private or unrecognized fonts. Both release modes include this README, third-party notices, installation documentation and a per-file checksum manifest. The normal mode remains available for an owner's private deployment with appropriately licensed optional fonts.
+
 ## Fonts and dependencies
 
-IRANSans files are not distributed in this public repository. The interface uses a local system-font fallback when they are absent. If you have the appropriate license, add the three optional font files to the ignored `frontend/local-fonts/` directory before building. See [third-party notices](THIRD_PARTY.md).
+The public application includes **Vazirmatn v33.003** web fonts (regular, medium and bold), served from its own assets with the SIL Open Font License and author notices. No font installation or external font service is required.
+
+IRANSans files are not distributed in this public repository or public release. If you have the appropriate license for your own deployment, add the three optional font files to the ignored `frontend/local-fonts/` directory before a normal build. Public builds always use the included Vazirmatn fonts. See [third-party notices](THIRD_PARTY.md).
 
 ## Development
 

@@ -8,6 +8,8 @@ PHP 8.3+، PDO MySQL، OpenSSL، mbstring، session، ctype/filter/hash/json و 
 
 ## ساخت بستهٔ کامل
 
+برای نصب روی هاست، بستهٔ آمادهٔ `seat-manager-v0.1.0-beta.1.zip` را از [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.1) دریافت کنید. این بسته رابط ساخته‌شده، وابستگی‌های PHP و سه وزن فونت وزیرمتن را دارد؛ نیازی به اجرای فرمان‌های ساخت زیر روی هاست نیست. فونت از خود برنامه بارگذاری می‌شود و روی دستگاه کاربران نیاز به نصب ندارد. فایل `SHA256SUMS.txt` کنار بسته برای بررسی دانلود و `MANIFEST.release.json` داخل آن برای بررسی فایل‌هاست. آرشیوهای خودکار «Source code» شامل وابستگی‌های آماده نیستند.
+
 روی محیط توسعه، وابستگی‌ها و رابط را آماده کنید و سپس بسته بسازید:
 
 ```sh
@@ -17,6 +19,8 @@ php bin/build-release.php /absolute/private/output/seat-manager-release.zip
 ```
 
 بستهٔ کامل شامل backend و vendor آماده، API، index.html، install.html، assets، migrationها و config/app.example.php است. هیچ تنظیم خصوصی، app_key، کلید نصب، DB، کاربر، نشست، ایمیل یا لاگ توسعه وارد آن نمی‌شود. خروجی archive باید بیرون public_html نگهداری شود. فایل‌های مجوز وابستگی‌ها حفظ شوند؛ استفاده از فونت اختیاری محلی تابع مجوز همان فونت است.
+
+برای انتشار عمومی، رابط را با `node frontend/build.mjs --public` و بسته را با `php bin/build-release.php --public /absolute/private/output/seat-manager-public.zip` بسازید. این حالت همیشه وزیرمتن داخلی و مجوز آن را همراه می‌کند و فونت خصوصی یا ناشناخته را نمی‌پذیرد. نسخهٔ عادی بدون این گزینه، فونت شخصی دارای مجوز را در صورت موجود بودن برای استقرار همان مالک حفظ می‌کند.
 
 سازندهٔ قدیمی `bin/build-package.php` فقط بستهٔ backend می‌سازد و برای سازگاری باقی است؛ برای تحویل ترکیبی برنامه از `build-release.php` استفاده کنید.
 
