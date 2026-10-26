@@ -61,6 +61,7 @@ test('personal normalization and view cannot leak an operational source or finan
 });
 test('server ETA is shared by table/detail, terminal states have no future promise',()=>{
   const r=requestModel(fixtures().request,{personalOwner:1});const label=etaLabel(r);assert(view.requestListView([r],{personal:true}).includes(label));assert(view.requestDetailView(r,{personal:true}).includes(label));assert.equal(etaLabel({...r,status:'completed'}),'تکمیل‌شده');
+  for(const [status,label]of [['completed','تکمیل‌شده'],['cancelled','لغوشده'],['rejected','ردشده']]){const html=view.requestListView([{...r,status}],{personal:true});assert.equal(html.split(label).length-1,1);}
 });
 test('permission-based navigation preserves personal pages for every role and blocks HR operations',()=>{
   for(const role of ['admin','hr','operator','user']){const permissions=testPermissions(role),pages=view.pagePermissions(permissions);assert(pages.includes('accounts'));assert(pages.includes('requests'));if(role==='hr'){assert(!pages.includes('seats'));assert(!pages.includes('finance'));}if(role==='operator'){assert(pages.includes('seats'));assert(!pages.includes('users'));}}

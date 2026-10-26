@@ -9,7 +9,7 @@ await collect(path.join(frontend,'src'));
 const fonts=['iransans-regular.ttf','iransans-medium.ttf','iransans-bold.ttf'];
 const fontRoot=path.join(frontend,'local-fonts');
 const hasFonts=(await Promise.all(fonts.map(file=>access(path.join(fontRoot,file)).then(()=>true,()=>false)))).every(Boolean);
-let css=(await Promise.all(['styles/app.css','styles/footer.css','styles/operations/approved.css','styles/operations/integration.css'].map(file=>readFile(path.join(frontend,file),'utf8')))).join('\n');
+let css=(await Promise.all(['styles/app.css','styles/footer.css','styles/operations/approved.css','styles/operations/integration.css','styles/palettes.css'].map(file=>readFile(path.join(frontend,file),'utf8')))).join('\n');
 if(!hasFonts)css=css.replace(/^@font-face\{[^\n]+\}\r?\n/gm,'');
 const icon=await readFile(path.join(frontend,'src/brand/icon.svg'));
 const templates=new Map(await Promise.all(['index','install'].map(async name=>[name,await readFile(path.join(frontend,name+'.template.html'),'utf8')])));

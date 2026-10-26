@@ -31,7 +31,10 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   const adminAccount=id=>(data.adminAccounts||[]).find(a=>a.id===Number(id))||data.request?.account||data.operation?.parties.find(p=>p.account.id===Number(id))?.account||[...(data.today||[]),...(data.tomorrow||[])].find(t=>t.account.id===Number(id))?.account;
   const objectId=id=>{const n=Number(id);if(!Number.isSafeInteger(n)||n<1)throw new ApiError('validation_failed','مورد معتبر انتخاب کنید.');return n;};
   function updateTitle(){document.title=pageTitle(content.querySelector('h1')?.textContent||views.pageTitles[route.page]||'پنل');}
-  async function load(){
+  async function load({preserveUserRow=null}={}){
+    const anchor=preserveUserRow?Array.from(content.querySelectorAll('[data-op-action="expand-user"]')).find(b=>Number(b.dataset.id)===preserveUserRow):null;
+    const anchorTop=anchor?.getBoundingClientRect().top,contentHeight=anchor?content.getBoundingClientRect().height:null;
+    content.style.minHeight=contentHeight===null?'':contentHeight+'px';
     const sequence=++loadSequence;loadAbort?.abort();loadAbort=new AbortController();const signal=loadAbort.signal;picker.close(false);form=null;context=null;data={};reasonDraft=null;notify('');
     root.querySelector('[data-op-navigation]').innerHTML=views.panelNavigation(route,permissions);content.innerHTML=heading(views.pageTitles[route.page]||'')+'<p class="sm-small" role="status">در حال دریافت اطلاعات…</p>';updateTitle();
     try{
@@ -56,8 +59,10 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
         else{const queue=await api.admin.queue(signal);result={requests:queue.requests.map(r=>requestModel(r)),renewals:queue.renewals.map(r=>requestModel(r)),capacity:capacityModel(queue.capacity)};}
       }
       if(destroyed||sequence!==loadSequence)return;data=result;render();
+      if(anchor){content.style.minHeight='';const next=Array.from(content.querySelectorAll('[data-op-action="expand-user"]')).find(b=>Number(b.dataset.id)===preserveUserRow);if(next){window.scrollTo(0,window.scrollY+next.getBoundingClientRect().top-anchorTop);next.focus({preventScroll:true});}}
       if(route.renewId&&data.selected){if(data.selected.locked)notify('این حساب در حال رسیدگی است؛ پس از پایان عملیات می‌توانید درخواست تازه ثبت کنید.');else openForm('renew-request',data.selected);}
     }catch(error){if(destroyed||sequence!==loadSequence||error.code==='aborted')return;content.innerHTML=heading(views.pageTitles[route.page]||'')+`<div class="sm-error" role="alert">${esc(error.message||'دریافت اطلاعات ممکن نشد.')}</div>${button('تلاش دوباره','reload')}`;updateTitle();}
+    finally{if(sequence===loadSequence)content.style.minHeight='';}
   }
   function routeTo(next,{remember=true}={}){if(writing)return;if(remember)previous.push({...route});route={tab:'pending',day:'today',...next};expandedUser=null;navigate(routeUrl(baseUrl,route));void load();}
   function render(){
@@ -154,7 +159,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       else if(action==='operation-detail')routeTo({page:'seats',operationId:objectId(id),day:route.day,tab:'ongoing'});
       else if(action==='personal-account')routeTo({page:'accounts',accountId:objectId(id)});else if(action==='admin-account')routeTo({page:'seats',tab:'accounts',accountId:objectId(id)});
       else if(action==='more-accounts'||action==='more-admin-accounts'||action==='more-operations'||action==='more-history'||action==='more-finance')routeTo({...route,before:objectId(id)});
-      else if(action==='more-request-history')routeTo({...route,before:objectId(id),historyKind:'requests'});else if(action==='signups')routeTo({page:'registrations'});else if(action==='expand-user'){expandedUser=expandedUser===Number(id)?null:Number(id);void load();}
+      else if(action==='more-request-history')routeTo({...route,before:objectId(id),historyKind:'requests'});else if(action==='signups')routeTo({page:'registrations'});else if(action==='expand-user'){expandedUser=expandedUser===Number(id)?null:Number(id);void load({preserveUserRow:Number(id)});}
       else if(action==='bulk-users'){requirePermission('people.manage');bulkRows=[];bulkPreview=null;routeTo({page:'users',bulk:true});}
       else if(action==='bulk-add'){bulkRows=bulkDraftRows(content.querySelector('[data-op-form="bulk-preview"]'));bulkRows.push({});bulkPreview=null;render();}else if(action==='bulk-remove'){bulkRows=bulkDraftRows(content.querySelector('[data-op-form="bulk-preview"]'));bulkRows.splice(Number(id),1);bulkPreview=null;render();}
       else if(action==='bulk-commit'&&bulkPreview?.valid)await send({route:'/admin/users/bulk-commit',body:{batch_id:bulkPreview.batch_id}});

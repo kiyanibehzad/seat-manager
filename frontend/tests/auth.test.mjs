@@ -100,7 +100,7 @@ test('all specified screens render without secrets, fake permission controls or 
   assert.equal(notificationSlotMarkup(),'<div data-notification-slot hidden></div>');
 });
 
-test('production entry omits preview code; only appearance is persisted',async()=>{
+test('production entry omits preview code; auth secrets never enter preference storage',async()=>{
   const entry=await readFile(new URL('../../public_html/index.html',import.meta.url),'utf8');assert(!entry.includes('preview'));assert.match(entry,/\.\/assets\/(?:operations\/)?app\.js/);
   const service=await readFile(new URL('../src/auth-api.js',import.meta.url),'utf8');assert(!service.includes('localStorage'));assert(!service.includes('sessionStorage'));
   const controller=await readFile(new URL('../src/auth-controller.js',import.meta.url),'utf8');assert(!controller.includes('localStorage'));assert(!controller.includes('widgetState'));

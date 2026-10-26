@@ -5,13 +5,13 @@ const build=sourceMode?null:await(await fetch('../build/staging/build-info.json'
 const moduleBase=sourceMode?'../src/':'../build/staging/assets/',version=build?'?v='+build.version:'';
 if(sourceMode){
   document.querySelector('link[rel=stylesheet]').href='../styles/app.css';
-  for(const path of ['../styles/operations/approved.css','../styles/operations/integration.css','../styles/footer.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=path;document.head.appendChild(link);}
+  for(const path of ['../styles/operations/approved.css','../styles/operations/integration.css','../styles/footer.css','../styles/palettes.css']){const link=document.createElement('link');link.rel='stylesheet';link.href=path;document.head.appendChild(link);}
   const fonts=document.createElement('style');fonts.textContent=[['regular',400],['medium',500],['bold',700]].map(([name,weight])=>`@font-face{font-family:"ACC IRANSans";src:url("../local-fonts/iransans-${name}.ttf");font-weight:${weight}}`).join('');document.head.appendChild(fonts);
 }
 const {mountOperations}=await import(moduleBase+'operations/controller.js'+version);
 const {mountTheme}=await import(moduleBase+'theme.js'+version);
-const {themeMarkup}=await import(moduleBase+'auth-view.js'+version);
-document.querySelector('#test-theme').innerHTML=themeMarkup();mountTheme();
+const {themeMarkup,brandMarkup}=await import(moduleBase+'auth-view.js'+version);
+document.querySelector('.app-header .brand').outerHTML=brandMarkup();document.querySelector('#test-theme').innerHTML=themeMarkup();const testTheme=mountTheme();
 let access=accessGroupFixtures();
 let f=fixtures(),role='admin',page='overview',scenario='normal',panel=null,writes=0,readRoutes=[];
 const requests=[f.request,{...f.request,id:502,status:'rejected',rejection_reason:'نتیجهٔ آزمون بررسی درخواست'}];
@@ -29,7 +29,7 @@ const transport={
     const visualOperation=capacityPartial?{...f.operation,kind:'paid_conversion',phase:'partial',capacity_strategy:'convert',capacity_applied:true,held:{standard:0,premium:0},items:[{account:conversionAccount,before:conversionBefore,target:{seat:'premium',starts_at:conversionAccount.starts_at,ends_at:conversionAccount.ends_at,return_seat:'standard'},result_recorded:true}]}:scenario==='partial'?{...f.operation,phase:'partial',held:{standard:0,premium:1},items:f.operation.items.map((item,i)=>i===1?{...item,result_recorded:true,account:{...item.account,seat:'none',starts_at:null,ends_at:null,assignment_id:null,state_version:item.account.state_version+1}}:item)}:f.operation;
     const visualRequest=scenario==='stale'?{...f.request,blockers:['stale_account'],expected_state_version:2}:scenario==='renewal'?{...f.request,kind:'renewal',account:renewalAccount,requested_seat:'premium',requested_ends_at:'2026-11-10T20:29:59Z',temporary:true,reason_text:'دلیل نمونه برای تمدید',blockers:[]}:(scenario==='partial'||capacityPartial)?{...f.request,status:'ongoing',operation_phase:'partial',account:visualOperation.items[0].account,eta:{rank:null,estimated_at:null,conditional:false,reason:'بخشی از نتیجه ثبت شده و پرونده هنوز کامل نیست.'}}:f.request;
     const visualRequests=[visualRequest,...requests.slice(1)];
-    const visualAccounts=scenario==='renewal'?f.accounts.map(a=>a.id===renewalAccount.id?renewalAccount:a):(scenario==='partial'||capacityPartial)?f.accounts.map(a=>visualOperation.items.find(i=>i.account.id===a.id)?.account||a):f.accounts;
+    const visualAccounts=['renewal','renewal-eligible'].includes(scenario)?f.accounts.map(a=>a.id===renewalAccount.id?renewalAccount:a):(scenario==='partial'||capacityPartial)?f.accounts.map(a=>visualOperation.items.find(i=>i.account.id===a.id)?.account||a):f.accounts;
     const visualCapacity=capacityPartial?{...f.capacity,standard:{purchased:3,assigned:0,held:0,free:3},premium:{purchased:2,assigned:2,held:0,free:0}}:scenario==='partial'?{...f.capacity,premium:{...f.capacity.premium,assigned:0,held:1,free:0}}:f.capacity;
     if(route==='/accounts')return items(visualAccounts.filter(a=>a.owner_id===1));
     if(route==='/requests')return items(visualRequests.filter(r=>r.owner_id===1));
@@ -73,7 +73,7 @@ const transport={
     return{};
   },
 };
-function mount(){panel?.destroy();readRoutes=[];document.querySelector('#read-routes').textContent='بدون خواندن آزمایشی';panel=mountOperations({container:document.querySelector('#test-panel'),transport,session:{authenticated:true,access_groups_ready:scenario!=='migration',user:{...f.users[0],app_role:['admin','hr','operator','user'].includes(role)?role:'user',access_group_id:({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role],access_group_name:access.items.find(g=>g.id===({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role])?.name,is_super_admin:role==='admin'},permissions:testPermissions(role)},baseUrl:new URL('.',location.href),initialRoute:{page,tab:'pending',day:'today'},navigate:()=>{}});}
+function mount(){testTheme.setUser(1);panel?.destroy();readRoutes=[];document.querySelector('#read-routes').textContent='بدون خواندن آزمایشی';panel=mountOperations({container:document.querySelector('#test-panel'),transport,session:{authenticated:true,access_groups_ready:scenario!=='migration',user:{...f.users[0],app_role:['admin','hr','operator','user'].includes(role)?role:'user',access_group_id:({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role],access_group_name:access.items.find(g=>g.id===({admin:4,hr:2,operator:3,user:1,reviewer:5,people:6})[role])?.name,is_super_admin:role==='admin'},permissions:testPermissions(role)},baseUrl:new URL('.',location.href),initialRoute:{page,tab:'pending',day:'today'},navigate:()=>{}});}
 for(const [selector,assign]of [['#test-role',v=>role=v],['#test-page',v=>page=v],['#test-state',v=>scenario=v]])document.querySelector(selector).addEventListener('change',event=>{assign(event.target.value);mount();});
 document.querySelector('#audit-dates').addEventListener('click',()=>{const form=document.querySelector('[data-op-form]');document.querySelector('#date-audit').textContent=JSON.stringify({nativeReportValidity:form?.reportValidity(),dates:Array.from(form?.querySelectorAll('[data-jalali]')||[]).map(input=>({name:input.name,readOnly:input.readOnly,willValidate:input.willValidate,value:input.value,invalid:input.getAttribute('aria-invalid')}))});});
 mount();

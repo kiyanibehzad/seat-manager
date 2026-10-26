@@ -1,3 +1,4 @@
+import {paletteMarkup} from './palette.js';
 import {accessGroupName} from './operations/access.js';
 import {APP_NAME, APP_ICON_URL} from './brand.js';
 const esc = value => String(value ?? '').replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -14,7 +15,7 @@ const info = (text, kind='info') => `<div class="message ${kind}" role="status">
 const back = label => `<div class="auth-footer">${route('login',label || 'بازگشت به ورود')}</div>`;
 
 export function themeMarkup() {
-  return `<fieldset class="theme-control"><legend>تم برنامه</legend>${[['system','سیستم'],['light','روز'],['dark','شب']].map(([key,label])=>`<label><input type="radio" name="appearance" value="${key}" ${key==='system'?'checked':''}><span>${label}</span></label>`).join('')}</fieldset>`;
+  return `<div class="appearance-controls"><fieldset class="theme-control"><legend>تم برنامه</legend>${[['system','سیستم'],['light','روز'],['dark','شب']].map(([key,label])=>`<label><input type="radio" name="appearance" value="${key}" ${key==='system'?'checked':''}><span>${label}</span></label>`).join('')}</fieldset>${paletteMarkup()}</div>`;
 }
 
 export function brandMarkup() {

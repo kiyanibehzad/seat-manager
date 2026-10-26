@@ -16,7 +16,7 @@ export function table({label,columns,rows,classes='',empty='موردی ثبت ن
 export function dateSpan({seat:type,start=null,end=null,endKnown=true,highlightEnd=false,endLabel='پایان'}){if(type==='none')return 'تخصیص نیافته';if(!type||!endKnown)return 'پایان ثبت نشده';if(highlightEnd&&end)return `<span class="sm-date-range"><span>${esc(endLabel)} <bdi class="sm-renewal-date">${fa(esc(end))}</bdi></span></span>`;return `<span class="sm-date-range">${start?`<span>از <bdi>${fa(esc(start))}</bdi></span>`:''}<span>${end?'تا <bdi>'+fa(esc(end))+'</bdi>':'بدون تاریخ پایان'}</span></span>`;}
 export function capacityMarkup(rows,{compact=false}={}){
   if(!Array.isArray(rows)||!rows.length)return '<p class="sm-small">ظرفیت ثبت نشده است.</p>';
-  if(compact)return `<div class="sm-worklist-capacity"><span>قابل واگذاری</span>${rows.map(c=>`${seat(c.type)}<bdi class="sm-num">${fa(c.free??'—')}</bdi>`).join('')}</div>`;
+  if(compact)return `<div class="sm-worklist-capacity" role="group" aria-label="ظرفیت قابل واگذاری"><span class="sm-worklist-capacity-title">قابل واگذاری</span><div class="sm-worklist-capacity-values">${rows.map(c=>`<div class="sm-worklist-capacity-item" data-seat="${esc(c.type)}">${seat(c.type)}<bdi class="sm-num">${fa(c.free??'—')}</bdi></div>`).join('')}</div></div>`;
   const columns=[{label:'نوع سیت',width:20},{label:'خریداری‌شده',width:20},{label:'تخصیص‌یافته',width:20},{label:'کنارگذاشته‌شده',width:20},{label:'قابل واگذاری',width:20}];
   return table({label:'ظرفیت ثبت‌شده',columns,rows:rows.map(c=>({cells:[seat(c.type),...['purchased','allocated','reserved','free'].map(k=>`<bdi class="sm-num">${fa(c[k]??'—')}</bdi>`)]})),classes:'op-capacity-table'});
 }

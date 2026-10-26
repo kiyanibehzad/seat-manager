@@ -19,6 +19,7 @@ export function mountAuth({ root, api, mailAction=null, initialScreen='login', n
   const notifications=mountNotifications({slot:root.querySelector('[data-notification-slot]'),api,baseUrl,navigation:notificationNavigation});
   const unsubscribeSession=api.subscribeSession(session=>{
     if(disposed)return;
+    theme?.setUser?.(session?.authenticated?session.user.id:null);
     const previousId=state.session?.authenticated?state.session.user.id:null;
     state.session=session;
     if(previousId&&!session?.authenticated){token=null;state.screen='login';render({focus:true});}
@@ -28,6 +29,7 @@ export function mountAuth({ root, api, mailAction=null, initialScreen='login', n
   function render({focus=false}={}) {
     if(disposed)return;
     for(const input of secretInputs(root))input.value='';
+    theme?.setUser?.(state.session?.authenticated?state.session.user.id:null);
     const signedIn=state.screen==='session';
     sessionCleanup?.();sessionCleanup=null;
     stage.className=signedIn?'session-container':'auth-stage';

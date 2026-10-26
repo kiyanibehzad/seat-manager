@@ -107,3 +107,11 @@
 .acc-operations .op-access-capabilities legend{padding-inline:6px}
 .acc-operations .op-access-summary{display:flex;flex-wrap:wrap;gap:6px 12px;line-height:1.9}
 .acc-operations .op-access-summary>span{display:inline-block}
+
+/* Responsive bulk rows must grow with their fields rather than inherit 104px. */
+@media(max-width:1100px){
+  .acc-operations .sm-product .op-bulk-table tbody tr{height:auto;min-height:0;background:var(--sm-bg)}
+  .acc-operations .sm-product .op-bulk-table tbody td{background:transparent}
+  .acc-operations .sm-product .op-bulk-table tbody td[colspan]{grid-column:1 / -1}
+  .acc-operations .sm-product .op-bulk-table tbody td[colspan]::before{display:none}
+}
