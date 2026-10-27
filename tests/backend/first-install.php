@@ -13,9 +13,10 @@ try {
     fiCheck((int)$instance['port']===33079&&realpath($instance['directory'])===realpath($root.'/storage/mysql'),'project-local DB guard');
     $nonce=bin2hex(random_bytes(6)); $database='acc_first_'.$nonce; $db->exec('CREATE DATABASE `'.$database.'` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci');
     $scratch=$root.'/work/first-install-'.$nonce;
-    foreach (['backend','config','public_html/api','storage/run','storage/logs','storage/sessions'] as $dir) { mkdir($scratch.'/'.$dir,0700,true); }
+    foreach (['backend/src','config','public_html/api','storage/run','storage/logs','storage/sessions'] as $dir) { mkdir($scratch.'/'.$dir,0700,true); }
     symlink($root.'/backend/vendor',$scratch.'/backend/vendor'); symlink($root.'/database',$scratch.'/database');
     copy($root.'/backend/bootstrap.php',$scratch.'/backend/bootstrap.php');
+    copy($root.'/backend/src/SecurityHeaders.php',$scratch.'/backend/src/SecurityHeaders.php');
     foreach (['install.php','index.php'] as $file) { copy($root.'/public_html/api/'.$file,$scratch.'/public_html/api/'.$file); }
     $socket=stream_socket_server('tcp://127.0.0.1:0',$errno,$message); $port=(int)substr(strrchr(stream_socket_get_name($socket,false),':'),1); fclose($socket);
     $config=require $root.'/config/app.example.php';

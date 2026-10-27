@@ -40,7 +40,7 @@ final class Installer
             if ((int)$this->app->db->one('SELECT COUNT(*) n FROM users')['n']!==0) { throw new ApiError(409,'conflict','نصب قبلاً انجام شده است.'); }
             $this->app->db->run('INSERT INTO departments(name,base_score) VALUES(?,1)',[$department]);
             $departmentId=(int)$this->app->db->pdo->lastInsertId(); $password=$chosen?$password:bin2hex(random_bytes(12));
-            $this->app->db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,app_role,email_verified_at,approval_status,approved_at) VALUES(?,?,?,?,?,'admin',UTC_TIMESTAMP(),'approved',UTC_TIMESTAMP())",[$email,password_hash($password,PASSWORD_DEFAULT),$first,$last,$departmentId]);
+            $this->app->db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,app_role,email_verified_at,approval_status,approved_at) VALUES(?,?,?,?,?,'admin',UTC_TIMESTAMP(),'approved',UTC_TIMESTAMP())",[$email,Passwords::hash($password),$first,$last,$departmentId]);
             $id=(int)$this->app->db->pdo->lastInsertId();
             $this->app->accessGroups->initializeUser($id,true);
             $this->app->db->run('INSERT IGNORE INTO allowed_email_domains(domain) VALUES(?)',[substr(strrchr($email,'@'),1)]);

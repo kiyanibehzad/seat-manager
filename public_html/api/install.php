@@ -4,7 +4,9 @@ use AccManager\ApiError;
 use AccManager\Installer;
 use AccManager\SessionManager;
 ini_set('display_errors','0'); ini_set('zend.exception_ignore_args','1');
-header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store'); header('Referrer-Policy: no-referrer'); header('X-Content-Type-Options: nosniff');
+require_once dirname(__DIR__,2).'/backend/src/SecurityHeaders.php';
+\AccManager\SecurityHeaders::send($_SERVER);
+header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store');
 $app=null; $id=bin2hex(random_bytes(8));
 try {
     $app=require dirname(__DIR__,2).'/backend/bootstrap.php'; $id=$app->requestId;

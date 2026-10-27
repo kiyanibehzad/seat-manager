@@ -17,7 +17,7 @@ try {
     if (!$parent||!is_dir($parent)||$parent===$public||str_starts_with($parent,$public.'/')) { throw new RuntimeException('The archive must be outside public_html in an existing directory.'); }
     $destination=$parent.'/'.basename($target);
     if (file_exists($destination)||is_link($destination)) { throw new RuntimeException('The output already exists.'); }
-    $fixed=['README.md','THIRD_PARTY.md','backend/bootstrap.php','backend/composer.json','backend/composer.lock','bin/cron.php','bin/migrate.php','config/app.example.php','docs/SETUP.md','docs/backend/API.md','docs/backend/API-OPERATIONS.md','docs/backend/OPERATIONS.md','docs/backend/INSTALL.md','docs/backend/API-MAIL.md','docs/backend/MAIL.md','docs/backend/ACCESS-GROUPS-CONTRACT.md','public_html/index.html','public_html/install.html'];
+    $fixed=['README.md','THIRD_PARTY.md','backend/bootstrap.php','backend/composer.json','backend/composer.lock','bin/cron.php','bin/migrate.php','config/app.example.php','docs/SETUP.md','docs/backend/API.md','docs/backend/API-OPERATIONS.md','docs/backend/OPERATIONS.md','docs/backend/INSTALL.md','docs/backend/API-MAIL.md','docs/backend/MAIL.md','docs/backend/ACCESS-GROUPS-CONTRACT.md','docs/backend/SECURITY-HEADERS.md','docs/user-guide/seat-manager-training-fa.pdf','public_html/.htaccess','public_html/index.html','public_html/install.html'];
     $directories=['backend/src','backend/vendor','database/migrations','public_html/assets','public_html/api'];
     $files=[];
     $safeSource=static function(string $relative) use ($root): string {
@@ -117,7 +117,6 @@ try {
         $add($relative,$contents);
     }
     if ($publicRelease&&count($publicFontUses)!==count($publicFontFiles)) { throw new RuntimeException('The public CSS must reference all three bundled Vazirmatn fonts.'); }
-    $add('public_html/.htaccess',"DirectoryIndex index.html\n");
     $release=<<<'TEXT'
 Seat Manager - combined offline release
 
@@ -152,6 +151,10 @@ of database, config/app_key, code/API and frontend assets. A rollback restores
 that matching set together; DDL is not undone by a transaction rollback. Read docs/SETUP.md and docs/backend/ before installation.
 MANIFEST.release.json contains SHA-256 hashes of every regular packaged file
 except the manifest itself. DirectoryIndex selects the built index.html.
+Keep the bundled public_html/.htaccess when deploying on Apache/LiteSpeed;
+configure equivalent framing and HTTPS-only HSTS headers for nginx as documented
+in docs/backend/SECURITY-HEADERS.md. Verify live responses after deployment.
+The illustrated Persian guide is in docs/user-guide/seat-manager-training-fa.pdf.
 Optional licensed local fonts, if present in built assets, remain subject to
 their existing license and are included only for the owner's deployment.
 TEXT;

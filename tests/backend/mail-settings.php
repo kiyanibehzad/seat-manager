@@ -33,8 +33,9 @@ try {
     $nonce=bin2hex(random_bytes(6)); $database='acc_mail_'.$nonce; $dbUser='am_'.$nonce; $dbPassword=bin2hex(random_bytes(24)); $principal=$adminDb->quote($dbUser)."@'127.0.0.1'";
     $adminDb->exec('CREATE DATABASE `'.$database.'` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci'); $adminDb->exec('CREATE USER '.$principal.' IDENTIFIED BY '.$adminDb->quote($dbPassword)); $adminDb->exec('GRANT ALL PRIVILEGES ON `'.$database.'`.* TO '.$principal);
     $scratch=$root.'/work/mail-settings-'.$nonce;
-    foreach (['backend','bin','config','database/migrations','public_html/api','storage/logs','storage/run','storage/sessions'] as $dir) { mkdir($scratch.'/'.$dir,0700,true); }
+    foreach (['backend/src','bin','config','database/migrations','public_html/api','storage/logs','storage/run','storage/sessions'] as $dir) { mkdir($scratch.'/'.$dir,0700,true); }
     symlink($root.'/backend/vendor',$scratch.'/backend/vendor'); copy($root.'/backend/bootstrap.php',$scratch.'/backend/bootstrap.php'); copy($root.'/bin/cron.php',$scratch.'/bin/cron.php');
+    copy($root.'/backend/src/SecurityHeaders.php',$scratch.'/backend/src/SecurityHeaders.php');
     foreach (['index.php','install.php'] as $file) { copy($root.'/public_html/api/'.$file,$scratch.'/public_html/api/'.$file); }
     foreach (['001_identity.sql','002_operations.sql','003_access_groups.sql'] as $file) { copy($root.'/database/migrations/'.$file,$scratch.'/database/migrations/'.$file); }
     $sock=stream_socket_server('tcp://127.0.0.1:0',$errno,$error); $port=(int)substr(strrchr(stream_socket_get_name($sock,false),':'),1); fclose($sock);

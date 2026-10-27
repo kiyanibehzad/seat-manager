@@ -23,13 +23,15 @@ The frontend and backend are integrated. A combined offline release builder and 
 
 ## Download and install on hosting
 
-Download **`seat-manager-v0.1.0-beta.1.zip`** from [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.1). This ready-to-install beta includes built frontend assets and PHP dependencies; **Node.js and Composer are not needed on the hosting account**. The separate `SHA256SUMS.txt` file verifies the download. GitHub's automatic “Source code” archives are for development and do not contain these prepared dependencies.
+Download **`seat-manager-v0.1.0-beta.2.zip`** from [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.2). This ready-to-install beta includes built frontend assets and PHP dependencies; **Node.js and Composer are not needed on the hosting account**. The separate `SHA256SUMS.txt` file verifies the download. GitHub's automatic “Source code” archives are for development and do not contain these prepared dependencies.
 
 نسخهٔ آمادهٔ نصب را از بخش **Assets** در صفحهٔ بالا دریافت کنید. فایل ZIP شامل رابط ساخته‌شده، وابستگی‌های PHP، فونت فارسی وزیرمتن و راهنمای نصب است. فونت از خود برنامه بارگذاری می‌شود و نیازی به نصب فونت روی سیستم یا اتصال به CDN ندارد. فقط `public_html/` باید در دسترس وب باشد؛ دیتابیس، تنظیمات خصوصی و اولین مدیر را برای نصب خودتان طبق [راهنمای نصب](docs/backend/INSTALL.md) آماده کنید. نام کاربری یا رمز پیش‌فرض وجود ندارد. این نسخه آزمایشی است و داده یا تنظیمات نصب دیگری را همراه ندارد.
 
 ## Persian illustrated guide
 
 [راهنمای تصویری فارسی (PDF، ۲۰ صفحه)](docs/user-guide/seat-manager-training-fa.pdf) شامل مدیریت Seat Manager، بخش‌های اصلی پنل OpenAI و مثال‌های مرحله‌به‌مرحلهٔ ثبت درخواست، تمدید و انتقال Premium است. تصاویر با اطلاعات نمونه بازسازی شده‌اند و فونت فارسی داخل PDF قرار دارد. راهنما بر پایهٔ بررسی ۲۷ اکتبر ۲۰۲۶ تهیه شده است؛ شرایط و زمان اثر تغییر سیت را از پنل فعلی OpenAI بررسی کنید.
+
+The hosting package also includes this guide. For Apache/LiteSpeed and Nginx deployment headers, see [security header setup](docs/backend/SECURITY-HEADERS.md). Existing installations retain their private configuration and storage during an update; the setup page is only for a first installation.
 
 ## Build and run locally
 

@@ -1,0 +1,19 @@
+DirectoryIndex index.html
+
+# Apache 2.4 / compatible LiteSpeed. Nginx static responses need the same
+# policy at the HTTPS virtual host; see docs/backend/SECURITY-HEADERS.md.
+<IfModule mod_headers.c>
+    Header onsuccess unset Content-Security-Policy
+    Header always set Content-Security-Policy "frame-ancestors 'none'"
+    Header onsuccess unset X-Frame-Options
+    Header always set X-Frame-Options "DENY"
+    Header onsuccess unset X-Content-Type-Options
+    Header always set X-Content-Type-Options "nosniff"
+    Header onsuccess unset Referrer-Policy
+    Header always set Referrer-Policy "no-referrer"
+
+    # One-day first rollout, this host only. Never trust forwarded request
+    # headers here and do not persist HTTPS for ordinary local HTTP testing.
+    Header onsuccess unset Strict-Transport-Security "expr=%{HTTPS} == 'on'"
+    Header always set Strict-Transport-Security "max-age=86400" "expr=%{HTTPS} == 'on'"
+</IfModule>

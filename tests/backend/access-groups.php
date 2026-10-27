@@ -48,8 +48,9 @@ try {
     $principal=$adminDb->quote($databaseUser)."@'127.0.0.1'";
     $adminDb->exec('CREATE USER '.$principal.' IDENTIFIED BY '.$adminDb->quote($databasePassword)); $adminDb->exec('GRANT ALL PRIVILEGES ON `'.$database.'`.* TO '.$principal);
     $scratch=$root.'/work/access-groups-'.$nonce;
-    foreach (['backend','config','public_html/api','database/migrations','storage/logs','storage/sessions','storage/run'] as $dir) { mkdir($scratch.'/'.$dir,0700,true); }
+    foreach (['backend/src','config','public_html/api','database/migrations','storage/logs','storage/sessions','storage/run'] as $dir) { mkdir($scratch.'/'.$dir,0700,true); }
     copy($root.'/backend/bootstrap.php',$scratch.'/backend/bootstrap.php'); symlink($root.'/backend/vendor',$scratch.'/backend/vendor');
+    copy($root.'/backend/src/SecurityHeaders.php',$scratch.'/backend/src/SecurityHeaders.php');
     foreach (['index.php','install.php'] as $file) { copy($root.'/public_html/api/'.$file,$scratch.'/public_html/api/'.$file); }
     foreach (['001_identity.sql','002_operations.sql'] as $file) { copy($root.'/database/migrations/'.$file,$scratch.'/database/migrations/'.$file); }
     $socket=stream_socket_server('tcp://127.0.0.1:0',$err,$msg); $port=(int)substr(strrchr(stream_socket_get_name($socket,false),':'),1); fclose($socket);
@@ -99,7 +100,7 @@ try {
     $hrSession=$hr->login($emails['hr'],$password); $opSession=$operator->login($emails['operator'],$password); $userSession=$user->login($emails['user'],$password);
     agCheck(in_array('registrations.review',$opSession['permissions'],true)&&!in_array('people.manage',$opSession['permissions'],true),'operator reviews registrations without people management');
     foreach ([$session,$hrSession,$opSession,$userSession] as $s) { agCheck(in_array('personal.read',$s['permissions'],true)&&in_array('personal.request',$s['permissions'],true)&&in_array('notifications.read',$s['permissions'],true),'all groups retain personal/notification permissions'); }
-    $catalog=$chief->get('/admin/access-groups'); $byKey=array_column($catalog['items'],null,'system_key');
+    $catalog=$chief->get('/admin/access-groups'); $byKey=array_column(array_filter($catalog['items'],static fn($group)=>is_string($group['system_key']??null)),null,'system_key');
     agCheck(count($catalog['capability_catalog'])===5&&$byKey['user']['protected']&&!$byKey['user']['is_super_admin']&&$byKey['user']['capabilities']===[],'five checkboxes and protected personal-only default');
     foreach (['user','admin'] as $system) { $g=$byKey[$system]; $chief->write('/admin/access-groups',['group_id'=>$g['id'],'name'=>'تغییر نام','capabilities'=>[],'expected_revision'=>$g['revision']],409,'PATCH'); }
     $chief->write('/admin/access-groups',['name'=>'روزانهٔ ناقص','capabilities'=>['dashboard.read']],422);
@@ -216,11 +217,11 @@ try {
     $dept['client']->write('/admin/departments',['name'=>'ممنوع','base_score'=>2],403,'POST',false);
     $chief->write('/admin/access-groups',['group_id'=>$deptGroup['id'],'name'=>'نسخهٔ قدیمی','capabilities'=>['people.manage'],'expected_revision'=>$beforeRevision],409,'PATCH');
     echo "Revision checks, open-session invalidation and transactional stale-actor rejection passed.\n";
-    $opGroup=$chief->get('/admin/access-groups')['items']; $opGroup=array_column($opGroup,null,'system_key')['operator'];
+    $opGroup=$chief->get('/admin/access-groups')['items']; $opGroup=array_column(array_filter($opGroup,static fn($group)=>is_string($group['system_key']??null)),null,'system_key')['operator'];
     $chief->write('/admin/access-groups',['group_id'=>$opGroup['id'],'name'=>$opGroup['name'],'capabilities'=>['registrations.review'],'expected_revision'=>$opGroup['revision']],200,'PATCH');
     agCheck(!$operator->get('/session')['authenticated'],'initial operator sessions also rotate on group edit'); $operator->login($emails['operator'],$password);
     $operator->get('/admin/registrations'); $operator->get('/admin/queue',[],403); $operator->get('/admin/dashboard',[],403);
-    $hrGroup=$chief->get('/admin/access-groups')['items']; $hrGroup=array_column($hrGroup,null,'system_key')['hr'];
+    $hrGroup=$chief->get('/admin/access-groups')['items']; $hrGroup=array_column(array_filter($hrGroup,static fn($group)=>is_string($group['system_key']??null)),null,'system_key')['hr'];
     $chief->write('/admin/access-groups',['group_id'=>$hrGroup['id'],'name'=>'واحد اداری','capabilities'=>['people.manage','departments.manage'],'expected_revision'=>$hrGroup['revision']],200,'PATCH');
     $nextSignup=$register('capability-recipients');
     $recipients=array_map('intval',array_column($db->all("SELECT recipient_id FROM notifications WHERE event_type='registration.ready' AND event_key=?",[hash('sha256','registration-ready:'.$nextSignup['id'])]),'recipient_id'));

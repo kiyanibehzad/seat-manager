@@ -48,9 +48,7 @@ final class Auth
         $limiter->check('login-ip',$ip,$ipLimit,$window);
         $limiter->check('login-email',$email,$emailLimit,$window);
         $row = $this->app->db->one('SELECT * FROM users WHERE email=?',[$email]);
-        // A fixed non-user hash makes the absent-user path perform password verification too.
-        $hash = $row['password_hash'] ?? '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2uheWG/igi.';
-        $verified = password_verify($password,$hash);
+        $verified = Passwords::verify($password,$row['password_hash'] ?? null);
         if (!$row || !$verified || !$this->eligible($row)) {
             $limiter->consume('login-ip',$ip,$ipLimit,$window); $limiter->consume('login-email',$email,$emailLimit,$window);
             throw new ApiError(401,'invalid_credentials','ایمیل یا رمز صحیح نیست یا حساب هنوز فعال نشده است.');
@@ -59,7 +57,7 @@ final class Auth
         return $this->app->db->transaction(function () use ($row,$password) {
             $fresh = $this->app->db->one('SELECT * FROM users WHERE id=? FOR UPDATE',[$row['id']]);
             if (!$this->eligible($fresh) || !hash_equals($row['password_hash'],$fresh['password_hash'])) { throw new ApiError(401,'invalid_credentials','امکان ورود به حساب وجود ندارد.'); }
-            if (password_needs_rehash($fresh['password_hash'], PASSWORD_DEFAULT)) { $this->app->db->run('UPDATE users SET password_hash=? WHERE id=?',[password_hash($password,PASSWORD_DEFAULT),$row['id']]); }
+            if (Passwords::needsRehash($fresh['password_hash'])) { $this->app->db->run('UPDATE users SET password_hash=? WHERE id=?',[Passwords::hash($password),$row['id']]); }
             $this->app->audit('auth.login',(int)$row['id'],(int)$row['id']);
             return $this->user((int)$row['id']);
         });
@@ -72,7 +70,7 @@ final class Auth
         (new RateLimiter($this->app))->consume('register-ip',$ip,(int)($this->app->config['auth_limits']['registration_ip']??300),(int)($this->app->config['auth_limits']['window_seconds']??900));
         $domain = substr(strrchr($email,'@'),1);
         if (!$this->app->db->one('SELECT domain FROM allowed_email_domains WHERE domain=?',[$domain])) { Input::invalid('email','دامنهٔ ایمیل سازمانی مجاز نیست.'); }
-        $hash = password_hash($password,PASSWORD_DEFAULT);
+        $hash = Passwords::hash($password);
         try {
             $this->app->db->transaction(function () use ($email,$hash,$first,$last) {
                 if ($this->app->db->one('SELECT id FROM users WHERE email=?',[$email])) { return; }
@@ -158,7 +156,7 @@ final class Auth
         return $this->app->db->transaction(function () use ($user,$password,$current) {
             $row=$this->app->db->one('SELECT * FROM users WHERE id=? FOR UPDATE',[$user['id']]);
             if (!$this->eligible($row) || (int)$row['auth_version'] !== (int)$user['auth_version']) { throw new ApiError(401,'unauthenticated','دوباره وارد شوید.'); }
-            if (!password_verify($current,$row['password_hash'])) { throw new ApiError(422,'invalid_credentials','رمز فعلی صحیح نیست.'); }
+            if (!Passwords::verify($current,$row['password_hash'])) { throw new ApiError(422,'invalid_credentials','رمز فعلی صحیح نیست.'); }
             $this->setPassword((int)$user['id'],$password);
             $this->app->audit('auth.password_changed',(int)$user['id'],(int)$user['id']);
             return $this->user((int)$user['id']);
@@ -167,7 +165,7 @@ final class Auth
     private function setPassword(int $id,string $password): void
     {
         $db=$this->app->db;
-        $db->run('UPDATE users SET password_hash=?,auth_version=auth_version+1 WHERE id=?',[password_hash($password,PASSWORD_DEFAULT),$id]);
+        $db->run('UPDATE users SET password_hash=?,auth_version=auth_version+1 WHERE id=?',[Passwords::hash($password),$id]);
         $db->run('UPDATE auth_tokens SET consumed_at=UTC_TIMESTAMP() WHERE user_id=? AND consumed_at IS NULL',[$id]);
         $db->run("UPDATE mail_outbox SET status='cancelled',payload_encrypted=NULL WHERE recipient_id=? AND category IN ('auth','initial_password') AND status IN ('pending','retry')",[$id]);
         $this->app->events->notify($id,'password-changed:'.bin2hex(random_bytes(16)),'auth.password_changed','رمز عبور تغییر کرد','رمز عبور برنامه تغییر کرد. اگر این کار را انجام نداده‌اید، با مسئول سامانه تماس بگیرید.',$this->app->url());

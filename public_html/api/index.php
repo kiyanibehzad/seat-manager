@@ -4,8 +4,9 @@ use AccManager\Api;
 use AccManager\ApiError;
 
 ini_set('display_errors','0'); ini_set('zend.exception_ignore_args','1');
+require_once dirname(__DIR__,2).'/backend/src/SecurityHeaders.php';
+\AccManager\SecurityHeaders::send($_SERVER);
 header('Content-Type: application/json; charset=utf-8'); header('Cache-Control: no-store, private');
-header('X-Content-Type-Options: nosniff'); header('Referrer-Policy: no-referrer');
 set_error_handler(static function (int $severity,string $message,string $file,int $line): bool {
     if (!(error_reporting() & $severity)) { return false; }
     throw new ErrorException('Internal PHP error',0,$severity,$file,$line);

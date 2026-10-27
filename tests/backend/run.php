@@ -6,6 +6,7 @@ $root=dirname(__DIR__,2); chdir($root);
 require __DIR__.'/OperationsSupport.php'; configureTestEnvironment($root);
 require $root.'/backend/vendor/autoload.php';
 use AccManager\App;
+use AccManager\ApiError;
 use AccManager\Installer;
 use AccManager\MailWorker;
 use AccManager\Migrator;
@@ -291,8 +292,13 @@ try {
         if ($message!==null) { check($r[1]['error']['message']===$message,'plain password validation message'); }
     }
     $legacyPassword=str_repeat('م',6);
-    $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,email_verified_at,approval_status) VALUES('legacy@example.test',?,'legacy','test',?,UTC_TIMESTAMP(),'approved')",[password_hash($legacyPassword,PASSWORD_DEFAULT),$department]);
+    $legacyHash=password_hash($legacyPassword,PASSWORD_BCRYPT,['cost'=>10]);
+    check(password_get_info($legacyHash)['options']['cost']===10,'legacy fixture retains the older bcrypt work factor');
+    $db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,email_verified_at,approval_status) VALUES('legacy@example.test',?,'legacy','test',?,UTC_TIMESTAMP(),'approved')",[$legacyHash,$department]);
     $legacy=new Client(); status($legacy->login('legacy@example.test',$legacyPassword),200,'new minimum does not block an existing shorter password');
+    $migratedHash=$db->one("SELECT password_hash FROM users WHERE email='legacy@example.test'")['password_hash'];
+    $migratedInfo=password_get_info($migratedHash);
+    check($migratedInfo['algoName']==='bcrypt'&&$migratedInfo['options']['cost']===12&&password_verify($legacyPassword,$migratedHash),'successful legacy login migrates to the shared policy without changing its password');
     $allAudit=json_encode($db->all('SELECT details_json FROM audit_log'),JSON_THROW_ON_ERROR);
     check(!str_contains($allAudit,$adminPassword)&&!str_contains($allAudit,$reset)&&!str_contains($allAudit,$newToken)&&!str_contains($allAudit,'password_hash'),'audit secrets absent');
     $log=is_file($root.'/storage/logs/app.log')?file_get_contents($root.'/storage/logs/app.log'):'';

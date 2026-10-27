@@ -67,7 +67,7 @@ try {
             if (!preg_match('~^(backend|bin|config|database|docs|public_html|storage)(/|$)~',$name)) { throw new RuntimeException('Unexpected archive directory.'); }
             continue;
         }
-        $allowed=in_array($name,['README.md','THIRD_PARTY.md','backend/bootstrap.php','backend/composer.json','backend/composer.lock','bin/cron.php','bin/migrate.php','config/app.example.php','docs/SETUP.md','public_html/index.html','public_html/install.html','public_html/.htaccess','RELEASE.txt','MANIFEST.release.json'],true)||preg_match('~^(backend/(src|vendor)|database/migrations|docs/backend|public_html/(assets|api))/~',$name);
+        $allowed=in_array($name,['README.md','THIRD_PARTY.md','backend/bootstrap.php','backend/composer.json','backend/composer.lock','bin/cron.php','bin/migrate.php','config/app.example.php','docs/SETUP.md','docs/user-guide/seat-manager-training-fa.pdf','public_html/index.html','public_html/install.html','public_html/.htaccess','RELEASE.txt','MANIFEST.release.json'],true)||preg_match('~^(backend/(src|vendor)|database/migrations|docs/backend|public_html/(assets|api))/~',$name);
         if (!$allowed||preg_match('~(^|/)(\.git|\.env[^/]*|node_modules|tests?|work)(/|$)|(^|/)(local\.php|setup-token\.txt|dev-access\.txt)$~',$name)||str_starts_with($name,'storage/')) { throw new RuntimeException('A forbidden release file was included.'); }
         $mode=($attributes>>16)&0777;
         if (($mode&0022)!==0||($mode&0111)!==0) { throw new RuntimeException('Release files must not be writable by others or executable.'); }
@@ -77,7 +77,11 @@ try {
         if (!isset($seen[$required])) { throw new RuntimeException('A required runtime file or empty directory is missing.'); }
     }
     if ($publicRelease) { foreach ($publicFontHashes as $required=>$_) { if (!isset($regular[$required])) { throw new RuntimeException('Bundled public fonts or license/author notices are missing.'); } } }
-    if ($zip->getFromName('public_html/.htaccess')!=="DirectoryIndex index.html\n") { throw new RuntimeException('The document-index directive changed.'); }
+    $headers=$zip->getFromName('public_html/.htaccess');
+    if (!is_string($headers)||!preg_match('/^DirectoryIndex index\\.html$/m',$headers)||!str_contains($headers,"frame-ancestors 'none'")||!str_contains($headers,'X-Frame-Options')||!str_contains($headers,'Strict-Transport-Security')||!str_contains($headers,'max-age=86400')) { throw new RuntimeException('The document-index or deployment security-header policy is missing.'); }
+    foreach (['backend/src/Passwords.php','backend/src/SecurityHeaders.php','docs/backend/SECURITY-HEADERS.md','docs/user-guide/seat-manager-training-fa.pdf'] as $required) {
+        if (!isset($regular[$required])) { throw new RuntimeException('A security runtime helper or packaged guide is missing.'); }
+    }
     $manifest=json_decode($zip->getFromName('MANIFEST.release.json'),true,512,JSON_THROW_ON_ERROR);
     if (!is_array($manifest)||count($manifest)!==$count-1) { throw new RuntimeException('The manifest does not cover the release.'); }
     foreach ($regular as $name=>$_) {

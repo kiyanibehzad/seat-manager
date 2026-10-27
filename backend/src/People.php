@@ -54,7 +54,7 @@ final class People
             $department=$this->department($data);
             if ($this->app->db->one('SELECT id FROM users WHERE email=?',[$email])) { throw new ApiError(409,'conflict','این ایمیل قبلاً ثبت شده است.'); }
             $password=bin2hex(random_bytes(12));
-            $this->app->db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,employee_number,email_verified_at,approval_status,approved_by,approved_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP(),'approved',?,UTC_TIMESTAMP())",[$email,password_hash($password,PASSWORD_DEFAULT),$first,$last,$department,$position,$employee,$fresh['id']]);
+            $this->app->db->run("INSERT INTO users(email,password_hash,first_name,last_name,department_id,organizational_position,employee_number,email_verified_at,approval_status,approved_by,approved_at) VALUES(?,?,?,?,?,?,?,UTC_TIMESTAMP(),'approved',?,UTC_TIMESTAMP())",[$email,Passwords::hash($password),$first,$last,$department,$position,$employee,$fresh['id']]);
             $id=(int)$this->app->db->pdo->lastInsertId();
             $this->app->accessGroups->initializeUser($id);
             if ($initial!==null) {
