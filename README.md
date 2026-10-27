@@ -27,6 +27,10 @@ Download **`seat-manager-v0.1.0-beta.1.zip`** from [GitHub Releases](https://git
 
 نسخهٔ آمادهٔ نصب را از بخش **Assets** در صفحهٔ بالا دریافت کنید. فایل ZIP شامل رابط ساخته‌شده، وابستگی‌های PHP، فونت فارسی وزیرمتن و راهنمای نصب است. فونت از خود برنامه بارگذاری می‌شود و نیازی به نصب فونت روی سیستم یا اتصال به CDN ندارد. فقط `public_html/` باید در دسترس وب باشد؛ دیتابیس، تنظیمات خصوصی و اولین مدیر را برای نصب خودتان طبق [راهنمای نصب](docs/backend/INSTALL.md) آماده کنید. نام کاربری یا رمز پیش‌فرض وجود ندارد. این نسخه آزمایشی است و داده یا تنظیمات نصب دیگری را همراه ندارد.
 
+## Persian illustrated guide
+
+[راهنمای تصویری فارسی (PDF، ۲۰ صفحه)](docs/user-guide/seat-manager-training-fa.pdf) شامل مدیریت Seat Manager، بخش‌های اصلی پنل OpenAI و مثال‌های مرحله‌به‌مرحلهٔ ثبت درخواست، تمدید و انتقال Premium است. تصاویر با اطلاعات نمونه بازسازی شده‌اند و فونت فارسی داخل PDF قرار دارد. راهنما بر پایهٔ بررسی ۲۷ اکتبر ۲۰۲۶ تهیه شده است؛ شرایط و زمان اثر تغییر سیت را از پنل فعلی OpenAI بررسی کنید.
+
 ## Build and run locally
 
 Runtime: **PHP 8.3+**, PDO MySQL, OpenSSL, mbstring, sessions and a MySQL/MariaDB database using InnoDB and utf8mb4. Composer and Node.js are development/build tools; they are not required on the hosting account when prepared dependencies and built assets are deployed.
