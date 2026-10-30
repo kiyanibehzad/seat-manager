@@ -31,7 +31,9 @@ Download **`seat-manager-v0.1.0-beta.3.zip`** from [GitHub Releases](https://git
 
 ## Persian illustrated guide
 
-[راهنمای تصویری فارسی (PDF، ۲۰ صفحه)](docs/user-guide/seat-manager-training-fa.pdf) شامل مدیریت Seat Manager، بخش‌های اصلی پنل OpenAI و مثال‌های مرحله‌به‌مرحلهٔ ثبت درخواست، تمدید و انتقال Premium است. تصاویر با اطلاعات نمونه بازسازی شده‌اند و فونت فارسی داخل PDF قرار دارد. راهنما بر پایهٔ بررسی ۲۷ اکتبر ۲۰۲۶ تهیه شده است؛ شرایط و زمان اثر تغییر سیت را از پنل فعلی OpenAI بررسی کنید.
+[راهنمای تصویری فارسی (PDF، ۲۶ صفحه، ویرایش ۲)](docs/user-guide/seat-manager-training-fa.pdf) شامل مدیریت Seat Manager، بخش‌های اصلی پنل OpenAI و مثال‌های مرحله‌به‌مرحلهٔ ثبت درخواست سیت، تمدید، انتقال Premium و درخواست کردیت بیشتر است. روند کردیت، تأیید مقدار افزایش، تنظیم سقف نهایی ماهانه در OpenAI و ثبت نتیجهٔ واقعی در صفحات ۱۹ تا ۲۴ توضیح داده شده‌اند. تصاویر با اطلاعات ساختگی بازسازی شده‌اند و فونت وزیرمتن داخل PDF قرار دارد. بخش کردیت در ۳۰ اکتبر ۲۰۲۶ بازبینی شده است؛ شرایط و زمان اثر نهایی را از پنل فعلی همان فضای کاری بررسی کنید.
+
+مثال راهنما: درخواست ۵۰۰ کردیت اضافه، تأیید ۳۵۰ و سقف قبلی ۱۰۰۰، یعنی سقف نهایی **۱۳۵۰ Credits / month**. مقدار افزایش با سقف ماهانه، موجودی مشترک و مصرف واقعی متفاوت است. [جزئیات این ویرایش](docs/user-guide/README.md).
 
 The hosting package also includes this guide. For Apache/LiteSpeed and Nginx deployment headers, see [security header setup](docs/backend/SECURITY-HEADERS.md). Existing installations retain their private configuration and storage during an update; the setup page is only for a first installation.
 
