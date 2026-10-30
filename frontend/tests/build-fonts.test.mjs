@@ -59,16 +59,13 @@ test('the hosting build forwards --public and excludes available owner-only font
   assert.equal(JSON.parse(await readFile(path.join(frontend,'build/staging/build-info.json'),'utf8')).font.publicMode,true);
 });
 
-test('the ordinary owner build preserves the licensed font CSS and the same three files',async t=>{
+test('a normal build uses bundled Vazirmatn even when old private fonts exist',async t=>{
   const {frontend}=await fixture(t,{privateFonts:true});
-  const expectedCss=(await Promise.all(['styles/app.css','styles/footer.css','styles/operations/approved.css','styles/operations/integration.css','styles/palettes.css'].map(file=>readFile(path.join(frontend,file),'utf8')))).join('\n');
   await run(process.execPath,[path.join(frontend,'build-staging.mjs')]);
-  assert.equal(await readFile(path.join(frontend,'build/staging/assets/app.css'),'utf8'),expectedCss);
-  assert.equal(await readFile(path.join(frontend,'preview-assets/app.css'),'utf8'),expectedCss);
-  assert.deepEqual((await readdir(path.join(frontend,'build/staging/assets/fonts'))).sort(),[...privateFiles].sort());
-  for(const file of privateFiles)assert.deepEqual(await readFile(path.join(frontend,'build/staging/assets/fonts',file)),await readFile(path.join(frontend,'local-fonts',file)));
+  const css=await assertPublicFonts(frontend,path.join(frontend,'build/staging/assets'));
+  assert.equal(await assertPublicFonts(frontend,path.join(frontend,'preview-assets')),css);
   const info=JSON.parse(await readFile(path.join(frontend,'build/staging/build-info.json'),'utf8'));
-  assert.deepEqual(info.font,{family:'ACC IRANSans',source:'licensed-local',weights:[400,500,700],bundled:true,publicMode:false});
+  assert.deepEqual(info.font,{family:'ACC Vazirmatn',source:'bundled-vazirmatn',weights:[400,500,700],bundled:true,publicMode:false});
 });
 
 test('a missing public font license stops before replacing existing staging or preview files',async t=>{

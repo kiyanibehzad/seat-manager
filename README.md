@@ -59,7 +59,7 @@ php tests/backend/release-package.php /absolute/new-seat-manager-release.zip
 
 Only `public_html/` is public. The archive includes no real configuration, installation key or local data. Follow [the installation guide](docs/backend/INSTALL.md) before opening `/install.html` to create the first administrator.
 
-For a **publicly distributable** archive, use public mode to bundle the included Vazirmatn web fonts even when a developer has optional private fonts installed:
+For a **publicly distributable** archive, use public mode to verify the bundled Vazirmatn web fonts and their notices:
 
 ```sh
 node frontend/build.mjs --public
@@ -67,13 +67,13 @@ php bin/build-release.php --public /absolute/new-seat-manager-public.zip
 php tests/backend/release-package.php --public /absolute/new-seat-manager-public.zip
 ```
 
-Public mode accepts only the pinned Vazirmatn font files and their accompanying license/author notices, and rejects private or unrecognized fonts. Both release modes include this README, third-party notices, installation documentation and a per-file checksum manifest. The normal mode remains available for an owner's private deployment with appropriately licensed optional fonts.
+Public mode accepts only the pinned Vazirmatn font files and their accompanying license/author notices, and rejects private or unrecognized fonts. Both release modes include this README, third-party notices, installation documentation and a per-file checksum manifest. Every frontend build uses the same bundled Vazirmatn fonts.
 
 ## Fonts and dependencies
 
 The public application includes **Vazirmatn v33.003** web fonts (regular, medium and bold), served from its own assets with the SIL Open Font License and author notices. No font installation or external font service is required.
 
-IRANSans files are not distributed in this public repository or public release. If you have the appropriate license for your own deployment, add the three optional font files to the ignored `frontend/local-fonts/` directory before a normal build. Public builds always use the included Vazirmatn fonts. See [third-party notices](THIRD_PARTY.md).
+Old private font files, if present in a development directory, are ignored by the build. Local and hosted versions both use the included Vazirmatn fonts. See [third-party notices](THIRD_PARTY.md).
 
 ## Development
 

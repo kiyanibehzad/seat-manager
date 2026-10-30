@@ -13,7 +13,7 @@ composer install --working-dir=backend --no-dev --prefer-dist
 node frontend/build.mjs
 ```
 
-Node.js builds `public_html/index.html`, `public_html/install.html` and their assets from the frontend sources and templates. It is not an application server. A clean checkout includes Vazirmatn web fonts and their license; the build serves them from the application's own assets, without a CDN or device font installation. Optional licensed owner-only fonts can be added before a normal build as described in [THIRD_PARTY.md](../THIRD_PARTY.md). Use `node frontend/build.mjs --public` to always build with bundled Vazirmatn for public distribution.
+Node.js builds `public_html/index.html`, `public_html/install.html` and their assets from the frontend sources and templates. It is not an application server. A clean checkout includes Vazirmatn web fonts and their license; the build serves them from the application's own assets, without a CDN or device font installation. All builds use the same bundled Vazirmatn fonts, including local development and the hosted application. Public package verification also checks the approved font hashes and notices.
 
 ## 2. Start the localhost development environment
 

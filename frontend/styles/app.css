@@ -1,6 +1,6 @@
-@font-face{font-family:"ACC IRANSans";src:url("./fonts/iransans-regular.ttf") format("truetype");font-weight:400;font-style:normal;font-display:swap}
-@font-face{font-family:"ACC IRANSans";src:url("./fonts/iransans-medium.ttf") format("truetype");font-weight:500;font-style:normal;font-display:swap}
-@font-face{font-family:"ACC IRANSans";src:url("./fonts/iransans-bold.ttf") format("truetype");font-weight:700;font-style:normal;font-display:swap}
+@font-face{font-family:"ACC Vazirmatn";src:url("./fonts/vazirmatn/Vazirmatn-Regular.woff2") format("woff2");font-weight:400;font-style:normal;font-display:swap}
+@font-face{font-family:"ACC Vazirmatn";src:url("./fonts/vazirmatn/Vazirmatn-Medium.woff2") format("woff2");font-weight:500;font-style:normal;font-display:swap}
+@font-face{font-family:"ACC Vazirmatn";src:url("./fonts/vazirmatn/Vazirmatn-Bold.woff2") format("woff2");font-weight:700;font-style:normal;font-display:swap}
 :root{
   color-scheme:light dark;
   --bg:light-dark(#fdfdfe,#1c1c1e);
@@ -18,7 +18,7 @@
   --positive:light-dark(#256547,#9bd4b4);
   --positive-bg:light-dark(#edf6f0,#1a2a21);
   --thumb:light-dark(#ffffff,#48484a);
-  font-family:"ACC IRANSans",Tahoma,sans-serif;
+  font-family:"ACC Vazirmatn",Tahoma,sans-serif;
   font-weight:400;font-synthesis:none;font-size:15px;line-height:1.85;
   background:var(--bg);color:var(--text);
 }

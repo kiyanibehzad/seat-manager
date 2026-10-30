@@ -155,11 +155,11 @@ Keep the bundled public_html/.htaccess when deploying on Apache/LiteSpeed;
 configure equivalent framing and HTTPS-only HSTS headers for nginx as documented
 in docs/backend/SECURITY-HEADERS.md. Verify live responses after deployment.
 The illustrated Persian guide is in docs/user-guide/seat-manager-training-fa.pdf.
-Optional licensed local fonts, if present in built assets, remain subject to
-their existing license and are included only for the owner's deployment.
+The application bundles Vazirmatn v33.003 Regular, Medium and Bold WOFF2
+fonts under the SIL Open Font License 1.1, with OFL.txt and AUTHORS.txt.
+Fonts are served from the application itself; no external font service is needed.
 TEXT;
     if ($publicRelease) {
-        $release=str_replace("Optional licensed local fonts, if present in built assets, remain subject to\ntheir existing license and are included only for the owner's deployment.","This public release bundles Vazirmatn v33.003 Regular, Medium and Bold WOFF2\nfonts under the SIL Open Font License 1.1, with OFL.txt and AUTHORS.txt. Font\nfiles are served from the application itself; no CDN or external font service\nis required. Proprietary IRANSans files are not included in this public ZIP.",$release);
         $release.="\n\nPublic ready-to-install package: PHP 8.3+ with PDO MySQL, OpenSSL, mbstring\nand sessions, and MySQL 8.0+ or MariaDB 10.6+ with InnoDB/utf8mb4 are required.\nPHP dependencies and compiled frontend assets are included. Node.js and Composer\nare not required on the hosting account. Start with docs/backend/INSTALL.md;\nthe source-development commands in README.md are not needed to install this ZIP.\nRead THIRD_PARTY.md and the bundled dependency licenses. No project-wide\nopen-source license has been selected.\n";
     }
     $add('RELEASE.txt',$release."\n");

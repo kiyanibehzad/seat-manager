@@ -29,7 +29,7 @@
     --sm-error: light-dark(#a03131, #ffb3b3);
     --sm-radius: 4px;
     --sm-row-space: 14px;
-    font-family: "ACC IRANSans", Tahoma, sans-serif;
+    font-family: "ACC Vazirmatn", Tahoma, sans-serif;
     font-weight:400;
     font-synthesis: none;
     font-size:15px;
@@ -82,7 +82,7 @@
   .acc-operations .sm-account { display: grid; grid-template-columns: minmax(0,1fr) minmax(140px,.65fr) auto; align-items: center; gap: 16px; padding: var(--sm-row-space) 0; border-bottom: 1px solid var(--sm-line); }
   .acc-operations .sm-account:last-child { border-bottom: 0; }
   .acc-operations .sm-account-id { min-width: 0; }
-  .acc-operations .sm-email { display: inline-block; direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; max-width: 100%; font-family: "ACC IRANSans", Tahoma, sans-serif; font-size:14px; }
+  .acc-operations .sm-email { display: inline-block; direction: ltr; unicode-bidi: isolate; overflow-wrap: anywhere; max-width: 100%; font-family: "ACC Vazirmatn", Tahoma, sans-serif; font-size:14px; }
   .acc-operations .sm-small { font-size:13px; color: var(--sm-muted); }
   .acc-operations .sm-status { display: inline-flex; align-items: center; gap: 5px; padding: 2px 9px; border-radius: 5px; font-size:13px; color: var(--sm-muted); background: var(--sm-elevated); max-width: 100%; }
   .acc-operations .sm-status.sm-active { color: var(--sm-positive); background: var(--sm-positive-bg); }
@@ -366,8 +366,8 @@
   }
 
 
-  .acc-operations .sm-product, .acc-operations .sm-product * { font-family:"ACC IRANSans",Tahoma,sans-serif; }
-  .acc-operations .sm-preview-tools, .acc-operations .sm-preview-tools * { font-family:"ACC IRANSans",Tahoma,sans-serif; }
+  .acc-operations .sm-product, .acc-operations .sm-product * { font-family:"ACC Vazirmatn",Tahoma,sans-serif; }
+  .acc-operations .sm-preview-tools, .acc-operations .sm-preview-tools * { font-family:"ACC Vazirmatn",Tahoma,sans-serif; }
   .acc-operations .sm-app-header { align-items:center; }
   .acc-operations .sm-brand { padding-top:3px; }
   .acc-operations .sm-header-user-area { display:flex; align-items:center; gap:14px; max-width:100%; min-width:0; }
