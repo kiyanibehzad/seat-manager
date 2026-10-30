@@ -1,5 +1,5 @@
 import {mailFixture} from './mail-fixtures.js';
-import {fixtures,testPermissions,accessGroupFixtures} from './operations-fixtures.js';
+import {fixtures,testPermissions,accessGroupFixtures,creditFixtures} from './operations-fixtures.js';
 // Source mode reviews an unbuilt frontend without publishing local product assets.
 const sourceMode=new URL(location.href).searchParams.has('source');
 const build=sourceMode?null:await(await fetch('../build/staging/build-info.json',{cache:'no-store'})).json();
@@ -17,6 +17,7 @@ let access=accessGroupFixtures();
 const mail=mailFixture();
 let f=fixtures(),role='admin',page='overview',scenario='normal',panel=null,writes=0,readRoutes=[];
 const requests=[f.request,{...f.request,id:502,status:'rejected',rejection_reason:'نتیجهٔ آزمون بررسی درخواست'}];
+const creditState=creditFixtures(),creditRequests=[];
 const transport={
   async read(route,query={}){
     readRoutes.push(route);document.querySelector('#read-routes').textContent='خواندن آزمایشی: '+[...new Set(readRoutes)].join('، ');
@@ -35,6 +36,9 @@ const transport={
     const visualCapacity=capacityPartial?{...f.capacity,standard:{purchased:3,assigned:0,held:0,free:3},premium:{purchased:2,assigned:2,held:0,free:0}}:scenario==='partial'?{...f.capacity,premium:{...f.capacity.premium,assigned:0,held:1,free:0}}:f.capacity;
     if(route==='/admin/mail')return mail.read(scenario);
     if(route==='/accounts')return items(visualAccounts.filter(a=>a.owner_id===1));
+    if(route==='/credit-requests'||route==='/admin/credit-requests')return items(creditRequests.filter(r=>(!query.status||r.status===query.status)&&(route.startsWith('/admin')||r.owner_id===1)));
+    if(route==='/credit-requests/detail'||route==='/admin/credit-requests/detail'){const request=creditRequests.find(r=>r.id===Number(query.id));if(!request)throw Object.assign(Error('درخواست اعتبار پیدا نشد'),{status:404});return{request,history:creditState.history};}
+    if(route==='/summary'||route==='/admin/people/summary')return {...creditState.summary,...route.startsWith('/admin')?{owner_id:Number(query.owner_id),person:f.users.find(u=>u.id===Number(query.owner_id))}:{}};
     if(route==='/requests')return items(visualRequests.filter(r=>r.owner_id===1));
     if(route==='/reasons')return{...items(f.reasons),other_code:'other'};
     if(route==='/departments')return items(f.departments);
@@ -43,7 +47,7 @@ const transport={
     if(route==='/admin/registrations')return items([{...f.users[1],approval_status:'pending_approval'}]);
     if(route==='/admin/accounts')return items(visualAccounts.filter(a=>!query.owner_id||a.owner_id===query.owner_id));
     if(route==='/admin/queue')return{requests:empty||scenario==='renewal'||scenario==='partial'||capacityPartial?[]:[visualRequest],renewals:!empty&&scenario==='renewal'?[visualRequest]:[],capacity:visualCapacity};
-    if(route==='/admin/dashboard')return{today:empty?[]:[{key:'request:501',kind:scenario==='renewal'?'renewal':'request',request:visualRequest}],tomorrow:[],counts:{today:empty?0:1,tomorrow:0},iran_today:'2026-10-24'};
+    if(route==='/admin/dashboard'){const credits=creditRequests.filter(r=>['pending','ongoing'].includes(r.status)).map(r=>({key:'credit:'+r.id,kind:'credit_request',credit_request:r}));return{today:empty?[]:[{key:'request:501',kind:scenario==='renewal'?'renewal':'request',request:visualRequest},...credits],tomorrow:[],counts:{today:empty?0:1+credits.length,tomorrow:0},iran_today:'2026-10-24'};}
     if(route==='/admin/capacity')return{capacity:visualCapacity};
     if(route==='/admin/operations')return items([visualOperation]);
     if(route==='/admin/operations/detail')return{operation:visualOperation,history:f.history};
@@ -70,6 +74,8 @@ const transport={
     if(route==='/admin/users'&&options?.method==='PATCH'){f.users=f.users.map(u=>u.id===body.user_id?{...u,...body}:u);return {user:f.users.find(u=>u.id===body.user_id)};}
 
     if(route==='/requests'){const account=f.accounts.find(a=>a.id===body.account_id);const r={...f.request,id:800+writes,account,kind:body.kind,requested_seat:body.seat,requested_starts_at:body.starts_at??null,requested_ends_at:body.ends_at??null,status:'pending'};requests.push(r);return{request:r};}
+    if(route==='/credit-requests'){const r={...creditState.request,id:900+writes,account:f.accounts.find(a=>a.id===body.account_id),requested_credits:body.requested_credits,reason_text:body.reason_text,created_at:new Date().toISOString()};creditRequests.push(r);return{request:r};}
+    if(route==='/credit-requests/cancel'||route.startsWith('/admin/credit-requests/')){const request=creditRequests.find(r=>r.id===body.request_id);if(!request)throw Object.assign(Error('درخواست اعتبار پیدا نشد'),{status:404});if(route.endsWith('/start'))Object.assign(request,{status:'ongoing',approved_credits:body.approved_credits,review_note:body.reason||'',reviewed_at:new Date().toISOString()});else if(route.endsWith('/complete'))Object.assign(request,{status:'completed',limit_before:body.limit_before,limit_after:body.limit_after,observed_at:body.observed_at,period_ends_at:body.period_ends_at||null,completed_at:new Date().toISOString()});else Object.assign(request,{status:route.endsWith('/cancel')?'cancelled':'rejected',rejection_reason:body.reason||'',completed_at:new Date().toISOString()});return{request};}
     if(route==='/admin/operations/result'){f.operation={...f.operation,status:body.complete?'completed':'ongoing',phase:body.complete?'completed':'partial',items:f.operation.items.map(item=>({...item,result_recorded:body.results.some(r=>r.account_id===item.account.id)}))};return{operation:f.operation};}
     if(route==='/admin/operations/abort'){f.operation={...f.operation,status:'cancelled',phase:'cancelled',outcome:'rolled_back'};return{operation:f.operation};}
     if(route==='/admin/requests/start'||route==='/admin/operations/start'||route==='/admin/corrections')return{operation:f.operation};

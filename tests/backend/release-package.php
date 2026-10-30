@@ -79,7 +79,7 @@ try {
     if ($publicRelease) { foreach ($publicFontHashes as $required=>$_) { if (!isset($regular[$required])) { throw new RuntimeException('Bundled public fonts or license/author notices are missing.'); } } }
     $headers=$zip->getFromName('public_html/.htaccess');
     if (!is_string($headers)||!preg_match('/^DirectoryIndex index\\.html$/m',$headers)||!str_contains($headers,"frame-ancestors 'none'")||!str_contains($headers,'X-Frame-Options')||!str_contains($headers,'Strict-Transport-Security')||!str_contains($headers,'max-age=86400')) { throw new RuntimeException('The document-index or deployment security-header policy is missing.'); }
-    foreach (['backend/src/Passwords.php','backend/src/SecurityHeaders.php','docs/backend/SECURITY-HEADERS.md','docs/user-guide/seat-manager-training-fa.pdf'] as $required) {
+    foreach (['backend/src/Passwords.php','backend/src/SecurityHeaders.php','backend/src/MailTemplate.php','backend/src/Operations/Credits.php','backend/src/Operations/Summary.php','database/migrations/005_credit_requests.sql','docs/backend/SECURITY-HEADERS.md','docs/user-guide/seat-manager-training-fa.pdf'] as $required) {
         if (!isset($regular[$required])) { throw new RuntimeException('A security runtime helper or packaged guide is missing.'); }
     }
     $manifest=json_decode($zip->getFromName('MANIFEST.release.json'),true,512,JSON_THROW_ON_ERROR);

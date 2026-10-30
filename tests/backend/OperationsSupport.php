@@ -97,6 +97,7 @@ function directOp(array $account,string $seat,array $extra=[]): array {
 }
 function resetOperations(): void {
  global $app; testDatabaseGuard($app); $db=$app->db; $db->run('SET FOREIGN_KEY_CHECKS=0');
+ foreach (['credit_request_events','credit_requests'] as $table) { if ((int)$db->one('SELECT COUNT(*) n FROM information_schema.TABLES WHERE TABLE_SCHEMA=DATABASE() AND TABLE_NAME=?',[$table])['n']===1) { $db->pdo->exec('TRUNCATE TABLE '.$table); } }
  foreach (['assignment_alert_markers','account_operation_locks','operation_accounts','seat_history','capacity_history','operation_commands','user_bulk_batches','seat_operations','seat_requests','scheduled_reminders','seat_assignments','openai_accounts','seat_capacity','request_reasons','notifications','mail_outbox'] as $table) { $db->pdo->exec('TRUNCATE TABLE '.$table); }
  $db->run('SET FOREIGN_KEY_CHECKS=1'); $db->run('INSERT INTO seat_capacity(id) VALUES(1)');
 }

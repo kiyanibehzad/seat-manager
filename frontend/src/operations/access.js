@@ -45,7 +45,7 @@ export function accessGroupAssignmentCommand(user,groupId,key){
 }
 export function formPermission(kind){
   if(['add-account','rename-account'].includes(kind))return 'personal.read';
-  if(['seat-request','renew-request'].includes(kind))return 'personal.request';
+  if(['seat-request','renew-request','credit-request'].includes(kind))return 'personal.request';
   if(['add-user','edit-user','bulk-preview'].includes(kind))return 'people.manage';
   if(kind==='department')return 'departments.manage';
   if(['approve-signup','reject-signup'].includes(kind))return 'registrations.review';

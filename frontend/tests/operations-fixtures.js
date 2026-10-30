@@ -12,6 +12,12 @@ export function fixtures(){
   return {users,accounts,request,operation,capacity,history,departments,reasons:[{code:'project',label:'پروژهٔ آزمون'}]};
 }
 export function testPermissions(role){const values=['personal.read','personal.request','notifications.read'];if(['admin','hr','people'].includes(role))values.push('people.manage');if(['admin','hr'].includes(role))values.push('departments.manage');if(['admin','hr','operator','reviewer'].includes(role))values.push('registrations.review');if(['admin','operator'].includes(role))values.push('dashboard.read','seats.manage','requests.manage','capacity.read');if(role==='admin')values.push('roles.manage','access_groups.manage','settings.manage','finance.read','capacity.manage');return values;}
+export function creditFixtures(){
+  const f=fixtures(),request={id:901,owner_id:1,account:f.accounts[0],requested_credits:500,approved_credits:null,reason_text:'اعتبار بیشتر برای تکمیل پروژهٔ آزمون',status:'pending',created_at:'2026-10-24T08:00:00Z',reviewed_at:null,completed_at:null,limit_before:null,limit_after:null,observed_at:null,period_ends_at:null,review_note:'',rejection_reason:'',score:4,blockers:[]};
+  const history=[{id:1,action:'credit.created',actor_name:'کاربر آزمون',recorded_at:request.created_at,reason:request.reason_text,before:null,after:{requested_credits:500}}];
+  const summary={owner_id:1,person:{first_name:'کاربر',last_name:'آزمون'},range:{from:'2026-10-01T00:00:00Z',to:'2026-10-30T12:00:00Z',seconds:2548800},seat_totals:{standard_seconds:172800,premium_seconds:86400,account_days:3},accounts:[{id:101,email:f.accounts[0].email,alias:'حساب آزمون',standard_seconds:172800,premium_seconds:86400,seat_changes:2,renewals:1,history_incomplete:false}],credits:{request_count:2,requested_credits:800,approved_credits:300,completed_credits:300,status_counts:{pending:1,completed:1}},seat_changes:2,renewals:1,notes:[]};
+  return {request,history,summary};
+}
 export function accessGroupFixtures(){
   const capability_catalog=[{code:'dashboard.read',label:'کارهای روزانه',requires:['seats.manage']},{code:'seats.manage',label:'مدیریت سیت‌ها و درخواست‌ها',requires:[]},{code:'registrations.review',label:'تأیید و رد ثبت‌نام',requires:[]},{code:'people.manage',label:'مدیریت افراد',requires:[]},{code:'departments.manage',label:'مدیریت بخش‌ها و امتیازها',requires:['people.manage']}];
   const make=(id,name,system_key,capabilities,protectedGroup=false,is_super_admin=false)=>({id,name,system_key,capabilities,protected:protectedGroup,is_super_admin,revision:1,user_count:1});

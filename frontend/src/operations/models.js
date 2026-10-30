@@ -16,6 +16,18 @@ export function requestModel(data,options={}){
   if(options.personalOwner!==null&&options.personalOwner!==undefined&&data.owner_id!==options.personalOwner)throw new ApiError('privacy_boundary','درخواست متعلق به نشست جاری نیست.');
   return {id:data.id,owner_id:data.owner_id,account,kind:data.kind,target:seatFromApi(data.requested_seat),temporary:data.temporary===true,status:data.status,phase:data.status==='ongoing'&&['working','partial','waiting_invite','scheduled'].includes(data.operation_phase)?data.operation_phase:null,requested_start:instantToDay(data.requested_starts_at),requested_end:instantToDay(data.requested_ends_at),approved_start:instantToDay(data.approved_starts_at),approved_end:instantToDay(data.approved_ends_at),requested_starts_at:data.requested_starts_at,requested_ends_at:data.requested_ends_at,approved_starts_at:data.approved_starts_at,approved_ends_at:data.approved_ends_at,reason_code:data.reason_code,reason_label:data.reason_label,reason_text:data.reason_text,rejection_reason:data.rejection_reason,created_at:data.created_at,reviewed_at:data.reviewed_at,completed_at:data.completed_at,score:data.score,blockers:Array.isArray(data.blockers)?data.blockers.map(blockerText):[],blocker_codes:Array.isArray(data.blockers)?[...data.blockers]:[],eta:data.eta&&typeof data.eta==='object'?{rank:data.eta.rank,estimated_at:data.eta.estimated_at,conditional:data.eta.conditional===true,reason:typeof data.eta.reason==='string'?data.eta.reason:''}:null};
 }
+const creditInteger=value=>Number.isSafeInteger(value)&&value>=0&&value<=100000000;
+export function creditRequestModel(raw,options={}){
+  if(!raw||!Number.isSafeInteger(raw.id)||raw.id<1||!Number.isSafeInteger(raw.owner_id)||!['pending','ongoing','completed','rejected','cancelled'].includes(raw.status)||!creditInteger(raw.requested_credits)||raw.requested_credits<1||typeof raw.reason_text!=='string')invalid();
+  if(options.personalOwner!=null&&raw.owner_id!==options.personalOwner)throw new ApiError('privacy_boundary','درخواست اعتبار متعلق به نشست جاری نیست.');
+  // Historical requests retain their original owner even after the account moves.
+  // The personal API deliberately omits the new owner's current state/version.
+  const redacted=options.personalOwner!=null&&raw.account?.owner_id===raw.owner_id&&Number.isSafeInteger(raw.account?.id)&&raw.account.id>0&&typeof raw.account.email==='string'&&raw.account.needs_review===true&&raw.account.seat==='none'&&raw.account.state_version===undefined;
+  const account=redacted?{id:raw.account.id,owner_id:raw.owner_id,email:raw.account.email,name:'',seat:'none',state_version:null,start:null,end:null,starts_at:null,ends_at:null,locked:false,needs_review:true}:accountModel(raw.account,options);
+  const requester=raw.requester&&raw.requester.id===raw.owner_id&&typeof raw.requester.first_name==='string'&&typeof raw.requester.last_name==='string'?{id:raw.owner_id,first_name:raw.requester.first_name,last_name:raw.requester.last_name}:account.owner_id===raw.owner_id?{id:raw.owner_id,first_name:account.first_name,last_name:account.last_name}: {id:raw.owner_id,name:'درخواست‌دهندهٔ قبلی'};
+  for(const name of ['approved_credits','limit_before','limit_after'])if(raw[name]!=null&&!creditInteger(raw[name]))invalid();
+  return {id:raw.id,owner_id:raw.owner_id,account,requester,requested_credits:raw.requested_credits,approved_credits:raw.approved_credits??null,status:raw.status,reason_text:raw.reason_text,review_note:options.personalOwner!=null?'':typeof raw.review_note==='string'?raw.review_note:'',rejection_reason:typeof raw.rejection_reason==='string'?raw.rejection_reason:'',created_at:raw.created_at,reviewed_at:raw.reviewed_at,completed_at:raw.completed_at,limit_before:raw.limit_before??null,limit_after:raw.limit_after??null,observed_at:raw.observed_at,period_ends_at:raw.period_ends_at,score:raw.score,blockers:Array.isArray(raw.blockers)?raw.blockers:[]};
+}
 export const requestStatusText=request=>request.status==='ongoing'&&request.phase==='waiting_invite'?'منتظر پذیرش دعوت':request.status==='ongoing'&&request.phase==='partial'?'نتیجهٔ جزئی؛ ناتمام':statusText(request.status);
 export function etaLabel(request){
   if(['completed','rejected','cancelled'].includes(request.status))return statusText(request.status);
@@ -37,9 +49,9 @@ export function operationModel(data){
 export function dashboardModel(data){
   if(!data||!Array.isArray(data.today)||!Array.isArray(data.tomorrow)||!data.counts)invalid();
   const task=row=>{
-    const request=row.request?requestModel(row.request):null,operation=row.operation?operationModel(row.operation):null,account=row.account?accountModel(row.account):request?.account||(operation?.parties.find(p=>p.role==='destination')||operation?.parties[0])?.account;
+    const credit=row.credit_request?creditRequestModel(row.credit_request):null,request=row.request?requestModel(row.request):null,operation=row.operation?operationModel(row.operation):null,account=row.account?accountModel(row.account):credit?.account||request?.account||(operation?.parties.find(p=>p.role==='destination')||operation?.parties[0])?.account;
     if(!account)invalid();
-    return{id:row.key,kind:row.kind,account,request,operation,label:row.kind==='renewal'?'درخواست تمدید':row.kind==='inactive_reclaim'?'پیگیری کاربر غیرفعال':row.kind==='expiry'?'پیگیری پایان تخصیص':operation?.kind==='transfer'?'انتقال Premium':operation?'عملیات در حال انجام':'درخواست سیت',warning:row.related_renewal?'تمدید مرتبط در انتظار تصمیم است.':request?.blockers[0]||''};
+    return{id:row.key,kind:row.kind,account,request,credit,operation,label:row.kind==='renewal'?'درخواست تمدید':row.kind==='inactive_reclaim'?'پیگیری کاربر غیرفعال':row.kind==='expiry'?'پیگیری پایان تخصیص':operation?.kind==='transfer'?'انتقال Premium':operation?'عملیات در حال انجام':'درخواست سیت',warning:row.related_renewal?'تمدید مرتبط در انتظار تصمیم است.':request?.blockers[0]||''};
   };
   return {today:data.today.map(task),tomorrow:data.tomorrow.map(task),counts:{today:data.counts.today,tomorrow:data.counts.tomorrow},iranToday:instantToDay(data.iran_today+'T12:00:00Z')};
 }

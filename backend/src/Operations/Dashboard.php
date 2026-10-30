@@ -39,10 +39,19 @@ final class Dashboard
             $bucket=(!$inactive&&$endDay===$tomorrow)?'tomorrow':'today';
             $buckets[$bucket][]=['key'=>'account:'.$id,'kind'=>$inactive?'inactive_reclaim':'expiry','priority'=>2,'due_at'=>Domain::iso($a['ends_at']),'account'=>$this->d->publicAccount($a,true),'suggested_return_seat'=>$a['return_seat'],'action'=>'start_return'];
         }
+        $credits=new Credits($this->d);
+        // Existing dashboards keep working while the additive credit migration is pending.
+        if ($credits->ready()) {
+            foreach ($this->d->app->db->all("SELECT * FROM credit_requests WHERE status IN ('pending','ongoing') ORDER BY created_at,id") as $row) {
+                $request=$credits->publicRequest($row,true);
+                $buckets['today'][]=['key'=>'credit:'.$request['id'],'kind'=>'credit_request','priority'=>$request['status']==='ongoing'?1:3,'due_at'=>null,'credit_request'=>$request,'action'=>$request['status']==='ongoing'?'continue_credit_request':'review_credit_request'];
+            }
+        }
         foreach ($buckets as &$tasks) {
             usort($tasks,static function ($a,$b) {
                 $cmp=$a['priority']<=>$b['priority']; if ($cmp!==0) { return $cmp; }
                 if ($a['kind']==='request'&&$b['kind']==='request') { return ($b['request']['score']<=>$a['request']['score'])?:strcmp($a['request']['created_at'],$b['request']['created_at'])?:($a['request']['id']<=>$b['request']['id']); }
+                if ($a['kind']==='credit_request'&&$b['kind']==='credit_request') { return ($b['credit_request']['score']<=>$a['credit_request']['score'])?:strcmp($a['credit_request']['created_at'],$b['credit_request']['created_at'])?:($a['credit_request']['id']<=>$b['credit_request']['id']); }
                 return strcmp($a['due_at']??'9999',$b['due_at']??'9999')?:strcmp($a['key'],$b['key']);
             });
         } unset($tasks);

@@ -22,7 +22,7 @@ final class MailTransport
             $mailer->SMTPAuth=$s['smtp_username']!==''; $mailer->Username=$s['smtp_username']; $mailer->Password=$s['smtp_password'];
             $mailer->SMTPSecure=$s['smtp_encryption']; $mailer->SMTPAutoTLS=$s['smtp_encryption']!=='';
         } else { $mailer->isMail(); }
-        $mailer->CharSet='UTF-8'; $mailer->setFrom($s['from_email'],$s['from_name']); $mailer->isHTML(false);
+        $mailer->CharSet='UTF-8'; $mailer->setFrom($s['from_email'],$s['from_name']);
         return $mailer;
     }
     public function connection(array $s): array
@@ -40,7 +40,9 @@ final class MailTransport
     {
         $transport=new TrackedSmtp(); $mailer=$this->mailer($s,$transport);
         try {
-            $mailer->addAddress($payload['to']); $mailer->MessageID=$messageId; $mailer->Subject=$payload['subject']; $mailer->Body=$payload['body'];
+            $message=MailTemplate::render($payload,$this->app->config['app_url']);
+            $mailer->addAddress($payload['to']); $mailer->MessageID=$messageId; $mailer->Subject=$message['subject'];
+            $mailer->isHTML(true); $mailer->Encoding='quoted-printable'; $mailer->Body=$message['html']; $mailer->AltBody=$message['text'];
             // PHP mail has no reliable acknowledgement boundary. Treat any send failure as uncertain.
             if ($s['transport']==='phpmail') { $this->dataAttempted=true; }
             $mailer->send();

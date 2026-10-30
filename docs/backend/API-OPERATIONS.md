@@ -113,3 +113,45 @@ Timestampهای سوابق: `history.items[].recorded_at` زمان ثبت برن
 ## نگاشت قابلیت‌های گروه
 
 گروه واقعی، مرجع مجوز پس از migration 003 است: GET /admin/dashboard به `dashboard.read` نیاز دارد؛ مدیریت سیت/درخواست و سوابق عملیاتی به `seats.manage` وابسته‌اند و `requests.manage`/`capacity.read` از آن مشتق می‌شوند. dashboard.read به seats.manage نیاز دارد تا همهٔ لینک‌های رسیدگی قابل استفاده باشند. تأیید/رد ثبت‌نام، `registrations.review` جداست؛ اپراتور اولیه آن را دارد و people.manage ندارد. مالی، نوشتن ظرفیت و تنظیمات همچنان فقط مدیر کل‌اند. بخش سازمانی و امتیاز صف از گروه مستقل می‌مانند. جزئیات checkboxها و وابستگی مدیریت بخش/امتیاز در ACCESS-GROUPS-CONTRACT.md است.
+
+## درخواست افزایش سقف اعتبار — migration 005
+
+واحد این بخش **Credits** است. مقدار درخواستی، افزایش مورد تأیید و سقف ماهانهٔ قبل/بعد مستقل‌اند. این مقدار توکن، دلار، موجودی اختصاصی، اعتبار رزروشده یا مصرف واقعی نیست. برنامه خرید Credit، تغییر سقف در OpenAI یا بازنشانی خودکار دوره انجام نمی‌دهد. انواع سیت، ظرفیت خریداری‌شده، hold و ETA سیت نیز با درخواست اعتبار تغییر نمی‌کنند.
+
+تمام مسیرهای زیر تا ثبت موفق `005_credit_requests.sql` و وجود هر دو جدول جدید، `503 migration_required` می‌دهند. dashboard قدیمی در این فاصله کار می‌کند و ردیف اعتبار ندارد. قواعد session/CSRF و idempotency بالای این سند اعمال می‌شوند.
+
+| route | روش / مجوز | ورودی / خروجی |
+|---|---|---|
+| `/credit-requests` | GET / `personal.request` | `status?,account_id?,owner_id?,before_id?` → `{items:[credit_request],next_before_id}` فقط متعلق به نشست؛ حداکثر ۵۰۰ ردیف در صفحه |
+| `/credit-requests` | POST / `personal.request` | `account_id,requested_credits,reason_text,idempotency_key` → `{request}` |
+| `/credit-requests/detail` | GET / `personal.request` | `id` → `{request,history}` فقط صاحب درخواست |
+| `/credit-requests/cancel` | POST / `personal.request` | `request_id,idempotency_key`؛ فقط pending متعلق به صاحب درخواست |
+| `/admin/credit-requests` | GET / `seats.manage` | `status?,owner_id?,account_id?,before_id?,limit?` → `{items,next_before_id}`؛ limit پیش‌فرض ۳۰، حداکثر ۱۰۰ |
+| `/admin/credit-requests/detail` | GET / `seats.manage` | `id` → `{request,history}` با اطلاعات مدیریتی |
+| `/admin/credit-requests/start` | POST / `seats.manage` | `request_id,approved_credits,reason?,idempotency_key`؛ pending → ongoing؛ مقدار تأییدشده می‌تواند با مقدار درخواستی متفاوت باشد |
+| `/admin/credit-requests/complete` | POST / `seats.manage` | `request_id,limit_before,limit_after,observed_at,confirmed:true,evidence,period_ends_at?,idempotency_key`؛ ongoing → completed فقط پس از بررسی اقدام واقعی |
+| `/admin/credit-requests/reject` | POST / `seats.manage` | `request_id,reason,idempotency_key`؛ pending یا ongoing → rejected، بدون فرض برگشت تغییر در OpenAI |
+| `/summary` | GET / `personal.read` | `from?,to?` → خلاصهٔ همان فرد؛ owner_id اختیاری فقط اگر برابر نشست باشد |
+| `/admin/people/summary` | GET / `seats.manage` | `owner_id,from?,to?` → خلاصهٔ فرد مشخص |
+
+مقدارها عدد صحیح JSON هستند؛ `requested_credits` و `approved_credits` بین ۱ و ۱۰۰٬۰۰۰٬۰۰۰ و `limit_before/after` بین صفر و همان سقف‌اند. رشتهٔ عددی یا اعشار معتبر نیست. `reason_text`، دلیل رد، یادداشت تصمیم و `evidence` متن UTF-8 حداکثر ۲۰۰۰ نویسه‌اند؛ متن‌های الزامی نمی‌توانند خالی باشند. سطر جدید در textarea مجاز و به LF نرمال می‌شود؛ کنترل‌های غیرمتنی رد می‌شوند.
+
+برای ایجاد، شروع و تکمیل، صاحب حساب باید فعال، تأییدشده و دارای ایمیل تأییدشده باشد؛ مالکیت روشن و سیت فعلی Standard یا Premium لازم است. حساب در عملیات سیت دیگری قفل نباشد. برای هر حساب فقط یک درخواست pending/ongoing مجاز است؛ محدودیت یکتای DB علاوه بر قفل تراکنش از ایجاد هم‌زمان تکراری جلوگیری می‌کند. وضعیت‌ها: `pending,ongoing,completed,rejected,cancelled`. لغو برای صاحب درخواست فقط تا شروع رسیدگی مجاز است. رد/توقف پروندهٔ باز دلیل الزامی دارد.
+
+شروع، نسخهٔ وضعیت حساب را ثبت می‌کند؛ تکمیل پس از تغییر آن نسخه، تغییر مالک، غیرفعال‌شدن، از دست‌رفتن سیت یا شروع عملیات سیت هم‌زمان، 409 می‌دهد. در این حالت ابتدا واقعیت بررسی شود؛ بستن پرونده با دلیل، تغییری را در OpenAI پس نمی‌گیرد. `limit_after−limit_before` باید دقیقاً برابر approved_credits باشد. `observed_at` زمان بررسی نتیجه، پس از شروع رسیدگی و حداکثر با ۶۰ ثانیه ارفاق نسبت به ساعت سرور است؛ بدون آن، evidence و confirmed نتیجه ثبت نمی‌شود. `period_ends_at` اختیاری و فقط سابقه است؛ باید بعد از زمان مشاهده باشد و موعد تقویمی، چرخهٔ صورتحساب، یادآوری یا بازنشانی سقف از آن استنتاج نمی‌شود.
+
+`credit_request`: `id,kind:"credit",unit:"credits",owner_id,account,requested_credits,approved_credits?,status,reason_text,rejection_reason?,limit_before?,limit_after?,score,blockers,created_at,reviewed_at?,completed_at?,observed_at?,period_ends_at?`. مقدار null نشان‌دهندهٔ ثبت‌نشدن است و صفر جای آن استفاده نمی‌شود. blockerها `inactive_owner,ownership_review,unpaid_account,account_locked,stale_account` هستند. نسخه و همهٔ مجوزها در سرور زیر قفل تازه بررسی می‌شوند؛ نسخهٔ کلاینت برای این مسیرها لازم نیست.
+
+نسخهٔ مدیریتی همچنین `requester:{id,first_name,last_name}` (صاحب اصلی درخواست)، `review_note,reviewed_by,completed_by,evidence` دارد. حساب، واقعیت فعلی است و در سوابق تاریخی ممکن است صاحب جدیدی داشته باشد؛ هویت درخواست‌دهنده با صاحب فعلی حساب یکی فرض نشود. در پاسخ شخصی پس از تغییر مالک، account فقط `id,owner_id` قدیمی، ایمیل شناخته‌شده، `alias:null,seat:"none",needs_review:true` دارد و score null می‌شود؛ وضعیت، نام یا امتیاز مالک جدید افشا نمی‌شود.
+
+`history` رویدادهای append-only با `id,action,recorded_at,before,after` است؛ snapshotها فقط وضعیت و مقدار/سقف/زمان همین درخواست‌اند. عمل‌ها `credit.created,credit.started,credit.completed,credit.cancelled,credit.rejected` هستند. پاسخ مدیریتی نام/شناسهٔ عامل، reason و evidence را هم دارد. پاسخ شخصی یادداشت داخلی تأیید، evidence و هویت عامل را ندارد؛ دلیل خود درخواست، لغو و رد برای پیگیری باقی می‌مانند.
+
+dashboard درخواست‌های اعتبار باز را در امروز، با `kind:"credit_request",credit_request,action:"review_credit_request"|"continue_credit_request"` نشان می‌دهد. تمدیدها همچنان مقدم‌اند؛ اعتبار ongoing اولویت ۱ و pending اولویت ۳ دارد و هم‌نوع‌ها با امتیاز نهایی، زمان ثبت و شناسه مرتب می‌شوند. این فهرست زمان ساختگی دریافت اعتبار تولید نمی‌کند.
+
+## قرارداد خلاصهٔ فرد
+
+`from/to` تاریخ ISO با offset/Z صریح هستند. پایان آینده به زمان جاری محدود می‌شود؛ بازهٔ معکوس یا ورودی نامعتبر 422 است. پیش‌فرض از قدیمی‌ترین زمان ثبت فرد/تخصیص ثبت‌شده تا اکنون است. مدت تخصیص از `assigned_at` تا `closed_at` واقعی یا اکنون، محدود به بازه، محاسبه می‌شود؛ `ends_at` برنامه‌ریزی‌شده تخصیص را خاتمه نمی‌دهد.
+
+خروجی: `owner_id,person:{first_name,last_name},range:{from,to,seconds},seat_totals:{standard_seconds,premium_seconds,account_days,ambiguous_seconds},accounts,seat_changes,renewals,credits,notes`. هر account شامل `id,email,alias,standard_seconds,premium_seconds,ambiguous_seconds,seat_changes,renewals,history_incomplete` است. حساب‌های فعلی و حساب‌های سابق دارای سابقهٔ تخصیص/اعتبار همین فرد پوشش داده می‌شوند؛ alias مالک جدید مخفی است. هم‌پوشانی هم‌نوع یک حساب دوباره جمع نمی‌شود و علامت سابقهٔ ناقص می‌گیرد؛ هم‌پوشانی متناقض دو نوع، از هر دو مدت کنار گذاشته و در ambiguous_seconds گزارش می‌شود. جمع چند حساب هم‌زمان «روزِ حساب» است، نه روز سپری‌شدهٔ فرد. تغییر سیت از تغییر واقعی نوع در seat_history شمرده می‌شود؛ تمدید از عملیات renewal با تغییر پایان، یک‌بار برای همان عملیات/حساب.
+
+`credits:{unit:"credits",request_count,requested_credits,approved_credits,completed_credits,completed_request_count,status_counts,actual_consumption:null}`. شمارش درخواست، مجموع درخواستی و وضعیت‌های فعلی مربوط به درخواست‌های **ثبت‌شده در بازه** هستند؛ approved_credits مجموع مقدار تأییدشدهٔ همان درخواست‌ها با وضعیت جاری ongoing/completed است. مقدار و تعداد تکمیل‌شده بر اساس **زمان تکمیل در بازه** محاسبه می‌شوند؛ بنابراین درخواست قدیمی‌تر می‌تواند در مجموع تکمیل این بازه باشد ولی در تعداد ثبت این بازه نباشد. مصرف واقعی OpenAI دریافت یا بازسازی نمی‌شود و تاریخچهٔ پیش از ثبت برنامه قابل استنتاج نیست.

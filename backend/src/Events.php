@@ -6,7 +6,7 @@ final class Events
     public function __construct(private App $app) {}
     public static function requiredPermission(string $type): ?string
     {
-        return match ($type) { 'registration.ready'=>'registrations.review','request.created','expiry.action_required'=>'seats.manage',default=>null };
+        return match ($type) { 'registration.ready'=>'registrations.review','request.created','expiry.action_required','credit.created'=>'seats.manage',default=>null };
     }
     // Call inside the business transaction: data, notification and outbox commit together.
     public function notify(int $recipient,string $eventKey,string $type,string $title,string $body,string $url,bool $email=true): void

@@ -6,6 +6,8 @@ final class Api
 {
     public const ROUTES=[
         '/accounts'=>'GET,POST,PATCH','/requests'=>'GET,POST','/requests/detail'=>'GET','/requests/cancel'=>'POST','/history'=>'GET','/reasons'=>'GET',
+        '/credit-requests'=>'GET,POST','/credit-requests/detail'=>'GET','/credit-requests/cancel'=>'POST','/summary'=>'GET',
+        '/admin/credit-requests'=>'GET','/admin/credit-requests/detail'=>'GET','/admin/credit-requests/start'=>'POST','/admin/credit-requests/complete'=>'POST','/admin/credit-requests/reject'=>'POST','/admin/people/summary'=>'GET',
         '/admin/requests'=>'GET','/admin/accounts'=>'GET','/admin/queue'=>'GET','/admin/dashboard'=>'GET','/admin/requests/detail'=>'GET','/admin/requests/revalidate'=>'POST','/admin/requests/reject'=>'POST','/admin/requests/start'=>'POST',
         '/admin/operations'=>'GET','/admin/operations/detail'=>'GET','/admin/operations/start'=>'POST','/admin/operations/result'=>'POST','/admin/operations/invitation'=>'POST','/admin/operations/defer'=>'POST','/admin/operations/cancel'=>'POST','/admin/operations/abort'=>'POST','/admin/corrections'=>'POST',
         '/admin/history'=>'GET','/admin/capacity'=>'GET,POST','/admin/finance'=>'GET','/admin/reasons'=>'POST','/admin/users/bulk-preview'=>'POST','/admin/users/bulk-commit'=>'POST',
@@ -19,7 +21,7 @@ final class Api
     private function dispatch(string $route,string $method,array $data,array $actor): array
     {
         $permission=match ($route) {
-            '/accounts','/history','/reasons'=>'personal.read','/requests','/requests/detail','/requests/cancel'=>'personal.request',
+            '/accounts','/history','/reasons','/summary'=>'personal.read','/requests','/requests/detail','/requests/cancel','/credit-requests','/credit-requests/detail','/credit-requests/cancel'=>'personal.request',
             '/admin/users/bulk-preview','/admin/users/bulk-commit'=>'people.manage',
             '/admin/dashboard'=>'dashboard.read',
             '/admin/reasons'=>'settings.manage','/admin/finance'=>'finance.read','/admin/capacity'=>$method==='GET'?'capacity.read':'capacity.manage',
@@ -33,6 +35,14 @@ final class Api
                 $r=$requests->row(Input::id($_GET,'id')); $admin=$route==='/admin/requests/detail'; if (!$admin&&(int)$r['owner_id']!==(int)$actor['id']) { $d->missing(); }
                 return [200,['request'=>$requests->publicRequest($r,$admin,(new Queue($d))->estimates()[(int)$r['id']]??null),'history'=>$history->list(['request_id'=>$r['id']],$actor,$admin)['items']]];
             case '/requests/cancel': return [200,$requests->cancel($data,$actor)];
+            case '/credit-requests': return [200,$method==='GET'?(new Credits($d))->list($_GET,$actor):(new Credits($d))->create($data,$actor)];
+            case '/credit-requests/detail': case '/admin/credit-requests/detail': return [200,(new Credits($d))->detail(Input::id($_GET,'id'),$actor,str_starts_with($route,'/admin/'))];
+            case '/credit-requests/cancel': return [200,(new Credits($d))->cancel($data,$actor)];
+            case '/admin/credit-requests': return [200,(new Credits($d))->list($_GET,$actor,true)];
+            case '/admin/credit-requests/start': return [200,(new Credits($d))->start($data,$actor)];
+            case '/admin/credit-requests/complete': return [200,(new Credits($d))->complete($data,$actor)];
+            case '/admin/credit-requests/reject': return [200,(new Credits($d))->reject($data,$actor)];
+            case '/summary': case '/admin/people/summary': return [200,(new Summary($d))->view($_GET,$actor,str_starts_with($route,'/admin/'))];
             case '/history': return [200,$history->list($_GET,$actor)];
             case '/reasons': return [200,['items'=>$this->app->db->all('SELECT code,label FROM request_reasons WHERE enabled=1 ORDER BY code'),'other_code'=>'other']];
             case '/admin/requests': return [200,$requests->adminList($_GET)];

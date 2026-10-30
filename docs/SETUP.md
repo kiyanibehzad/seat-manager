@@ -92,10 +92,20 @@ Use this command only with the intended target configuration and a coordinated b
 
 Before 003 is applied, existing role behavior remains available and `session.access_groups_ready` is false; group-edit endpoints return `503 migration_required`. After migration, permissions and managerial notification recipients come from the real group. `app_role` is only a legacy compatibility label.
 
-The new isolated regression can run locally without resetting the existing QA fixture:
+The isolated access-group regression can run locally without resetting the existing QA fixture:
 
 ```sh
 php tests/backend/access-groups.php
 ```
 
 It guards the existing project-only MariaDB instance, creates its own random database/user, starts a temporary localhost HTTP server with separate sessions, tests baseline-to-group upgrade and fresh installation, then removes only its own temporary resources. It does not read the human login file, private main/QA configuration or deployment backups. Existing destructive suites must use their independently configured database/port harness; they must not be pointed at QA while browser testing is in progress.
+
+## Credit-request upgrade (migration 005)
+
+Migration `005_credit_requests.sql` adds credit-request and event records. Apply it through the private CLI migrator with the same coordinated backup and maintenance procedure described above. It does not change existing users, passwords, seat assignments, purchased capacity, SMTP settings or queued messages. Do not use the first-install page to upgrade an existing installation.
+
+The application records an administrator's manually verified increase to an OpenAI monthly credit limit. It does not buy credits, update OpenAI, reserve a personal credit wallet, measure actual consumption or reset limits automatically. A usage-period end can be recorded as context; confirm the actual period and limits in OpenAI rather than assuming that a calendar month or a billing cycle applies. Existing backend seat endpoints remain available before the migration; the new endpoints require the migration. Keep maintenance active until migration 005 and the matching frontend/backend are installed together: the updated personal account view also reads open credit requests.
+
+Person summaries cover only actual seat changes recorded in this installation. Concurrent accounts have their own durations; their aggregate is labelled account-days. Planned end dates do not prove that a seat was released. Requested and completed approved credits remain separate from actual usage reported by OpenAI.
+
+`tests/backend/credit-requests.php` resets its guarded test database. Run it only in a separate disposable database/HTTP harness, following the `ACC_TEST_*` overrides in `tests/backend/OperationsSupport.php`. It verifies the 004→005 upgrade, existing data preservation, authorization, concurrency, request lifecycle and summary calculations. `tests/backend/mail-templates.php` is a pure rendering/MIME check and needs no database, SMTP connection or delivery.

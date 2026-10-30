@@ -10,11 +10,13 @@ A Persian-first internal web application for requesting and managing OpenAI acco
 
 - Multiple named accounts per person; Standard, Premium and No Seat status.
 - Request queues, temporary or indefinite assignments, renewal approval and two-account transfers.
+- Additional-credit requests with a required reason, adjustable approval, manual OpenAI verification and an independent event history; requested/approved credits are not reported as actual consumption.
 - Named permission groups, independent of organizational departments and priority scores; one group per person, with administrator, HR, operator and employee presets.
 - A daily work desk, full seat/request queues and independent registration review; personal accounts and private history for every group.
 - Purchased/assigned/held/free capacity, conditional waiting-time estimates and an audit trail.
 - Corporate-domain registration, email verification and approval by an authorized reviewer; password recovery.
 - In-app notifications, queued email and temporary Premium reminders; chief-only SMTP sender settings, explicit connection/send tests and queue/scheduler status.
+- Per-person and per-account summaries of recorded Standard/Premium time, seat changes, renewals and credit requests; readable Persian HTML email with a plain-text alternative.
 - Persian RTL interface, Jalali date pickers, Iran time, light/dark/system themes and personal color palettes.
 
 ## Status
@@ -23,7 +25,7 @@ The frontend and backend are integrated. A combined offline release builder and 
 
 ## Download and install on hosting
 
-Download **`seat-manager-v0.1.0-beta.2.zip`** from [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.2). This ready-to-install beta includes built frontend assets and PHP dependencies; **Node.js and Composer are not needed on the hosting account**. The separate `SHA256SUMS.txt` file verifies the download. GitHub's automatic “Source code” archives are for development and do not contain these prepared dependencies.
+Download **`seat-manager-v0.1.0-beta.3.zip`** from [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.3). This ready-to-install beta includes built frontend assets and PHP dependencies; **Node.js and Composer are not needed on the hosting account**. The separate `SHA256SUMS.txt` file verifies the download. GitHub's automatic “Source code” archives are for development and do not contain these prepared dependencies.
 
 نسخهٔ آمادهٔ نصب را از بخش **Assets** در صفحهٔ بالا دریافت کنید. فایل ZIP شامل رابط ساخته‌شده، وابستگی‌های PHP، فونت فارسی وزیرمتن و راهنمای نصب است. فونت از خود برنامه بارگذاری می‌شود و نیازی به نصب فونت روی سیستم یا اتصال به CDN ندارد. فقط `public_html/` باید در دسترس وب باشد؛ دیتابیس، تنظیمات خصوصی و اولین مدیر را برای نصب خودتان طبق [راهنمای نصب](docs/backend/INSTALL.md) آماده کنید. نام کاربری یا رمز پیش‌فرض وجود ندارد. این نسخه آزمایشی است و داده یا تنظیمات نصب دیگری را همراه ندارد.
 
