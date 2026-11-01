@@ -31,11 +31,19 @@ Download **`seat-manager-v0.1.0-beta.3.zip`** from [GitHub Releases](https://git
 
 ## Persian illustrated guide
 
-[راهنمای تصویری فارسی (PDF، ۲۶ صفحه، ویرایش ۲)](docs/user-guide/seat-manager-training-fa.pdf) شامل مدیریت Seat Manager، بخش‌های اصلی پنل OpenAI و مثال‌های مرحله‌به‌مرحلهٔ ثبت درخواست سیت، تمدید، انتقال Premium و درخواست کردیت بیشتر است. روند کردیت، تأیید مقدار افزایش، تنظیم سقف نهایی ماهانه در OpenAI و ثبت نتیجهٔ واقعی در صفحات ۱۹ تا ۲۴ توضیح داده شده‌اند. تصاویر با اطلاعات ساختگی بازسازی شده‌اند و فونت وزیرمتن داخل PDF قرار دارد. بخش کردیت در ۳۰ اکتبر ۲۰۲۶ بازبینی شده است؛ شرایط و زمان اثر نهایی را از پنل فعلی همان فضای کاری بررسی کنید.
+[راهنمای تصویری فارسی Seat Manager و کنسول OpenAI (PDF، ۲۸ صفحه، ویرایش ۳)](docs/user-guide/seat-manager-training-fa.pdf)
 
-مثال راهنما: درخواست ۵۰۰ کردیت اضافه، تأیید ۳۵۰ و سقف قبلی ۱۰۰۰، یعنی سقف نهایی **۱۳۵۰ Credits / month**. مقدار افزایش با سقف ماهانه، موجودی مشترک و مصرف واقعی متفاوت است. [جزئیات این ویرایش](docs/user-guide/README.md).
+راهنما مسیر ثبت درخواست سیت، تمدید، انتقال Premium و درخواست کردیت را از پنل کارمند تا ثبت نتیجه توسط مدیر نشان می‌دهد. در ویرایش ۱۰ آبان ۱۴۰۵ (۱ نوامبر ۲۰۲۶)، بخش‌های کنسول با عکس‌های واقعی و بی‌نام به‌روز شده‌اند.
 
-The hosting package also includes this guide. For Apache/LiteSpeed and Nginx deployment headers, see [security header setup](docs/backend/SECURITY-HEADERS.md). Existing installations retain their private configuration and storage during an update; the setup page is only for a first installation.
+| کار مدیر در کنسول | صفحه |
+|---|---|
+| تغییر سیت یک عضو از ستون **Seat type** | ۱۰ |
+| تعیین سقف پیش‌فرض نوع سیت یا سقف کردیت یک نفر | ۱۱ و ۲۲ |
+| دیدن سهمیهٔ پنج‌ساعته و هفتگی، توکن و کردیت مصرفی یک نفر | ۲۵ و ۲۶ |
+
+[فهرست مطالب و جزئیات ویرایش](docs/user-guide/README.md)
+
+The hosting package includes the guide available at build time. Use the PDF above for the latest revision. For Apache/LiteSpeed and Nginx deployment headers, see [security header setup](docs/backend/SECURITY-HEADERS.md). Existing installations retain their private configuration and storage during an update; the setup page is only for a first installation.
 
 ## Build and run locally
 
