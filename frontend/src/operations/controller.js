@@ -126,13 +126,20 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     else if(data.selected)html=views.adminAccountView(data.selected,{history:data.history,canCapacity:can('capacity.manage')})+(data.historyNext?button('سوابق بیشتر','more-history',data.historyNext):'');
     else if(route.page==='seats'){html=heading('سیت‌ها و درخواست‌ها','',can('capacity.manage')?button('ویرایش تعداد خریداری‌شده','capacity'):'' )+(data.capacity?capacityMarkup(data.capacity.rows):'')+`<nav class="sm-tabs">${[['pending','درخواست‌های جدید'],['renewals','تمدیدها'],['credits','اعتبار بیشتر'],['ongoing','در حال انجام'],['history','سوابق'],['accounts','حساب‌های کاربران']].map(([id,label])=>button(label,'seat-tab',id,{extra:`aria-pressed="${route.tab===id}"`})).join('')}</nav>`+(route.tab==='credits'?`<div class="op-credit-filter"><label class="sm-field"><span>وضعیت درخواست اعتبار</span><select data-credit-status>${[['pending','در انتظار بررسی'],['ongoing','در حال انجام'],['completed','تکمیل‌شده'],['rejected','ردشده'],['cancelled','لغوشده'],['all','همهٔ وضعیت‌ها']].map(([key,label])=>`<option value="${key}" ${(route.creditStatus||'pending')===key?'selected':''}>${label}</option>`).join('')}</select></label><span class="sm-small">افزایش سقف مجاز؛ مصرف واقعی نیست.</span></div>`+creditListView(data.creditRequests,{next:data.next}):route.tab==='accounts'?views.accountListView(data.adminAccounts,{next:data.next}):data.operations?(views.operationListView(data.operations,{next:data.next})+(data.historyRequests?'<section class="mg-subsection"><h2>همهٔ درخواست‌ها و نتیجه‌های بررسی</h2>'+views.requestListView(data.historyRequests)+(data.requestsNext?button('درخواست‌های قدیمی‌تر','more-request-history',data.requestsNext):'')+'</section>':'')):views.requestListView(route.tab==='renewals'?data.renewals:data.requests));}
     content.innerHTML=html;
-    if(form){const work=data.operation||data.creditRequest?content.querySelector('.op-detail-work'):null,element=content.querySelector('.sm-titlebar');if(work)work.insertAdjacentHTML('beforeend',form);else if(element)element.insertAdjacentHTML('afterend',form);else content.insertAdjacentHTML('afterbegin',form);}
+    if(form){
+      const panel=document.createRange().createContextualFragment(form).firstElementChild;
+      panel.id='op-page-editor';
+      const work=(data.operation||data.creditRequest)&&content.querySelector('.op-detail-work');
+      const title=content.querySelector('.sm-titlebar');
+      if(work)work.append(panel);else if(title)title.after(panel);else content.prepend(panel);
+    }
     if(route.page==='settings'&&canManageMail(session)){const slot=content.querySelector('[data-mail-panel]');if(slot)mailPanel=mountMailSettings({root:slot,transport});}
     updateTitle();picker.enhance();syncForms();
   }
-  function closeGroupEditor(restoreFocus=false){
-    const trigger=content.querySelector('[aria-controls="op-group-editor"]');
-    content.querySelector('[data-group-editor]')?.remove();
+  function closeInlineEditor(restoreFocus=false){
+    const trigger=content.querySelector('[aria-controls="op-inline-editor"]');
+    picker.close(false);
+    content.querySelector('[data-inline-editor]')?.remove();
     if(trigger){
       trigger.setAttribute('aria-expanded','false');
       trigger.removeAttribute('aria-controls');
@@ -144,10 +151,15 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     requirePermission('access_groups.manage');
     const assigning=trigger.dataset.opAction==='assign-access-group';
     if(!assigning&&record?.protected)throw new ApiError('forbidden','این گروه محافظت‌شده قابل ویرایش نیست.',{},403);
-    const wasOpen=trigger.getAttribute('aria-expanded')==='true';
-    closeGroupEditor();
-    if(wasOpen){trigger.focus();return;}
     const markup=assigning?forms.accessGroupAssignmentForm(record,data.groups):forms.accessGroupForm(record,data.capabilities);
+    openInlineEditor(trigger,markup,record);
+  }
+  function openInlineEditor(trigger,markup,record){
+    const wasOpen=trigger.getAttribute('aria-controls')==='op-inline-editor';
+    closeInlineEditor();
+    if(wasOpen){trigger.focus();return;}
+    content.querySelector('#op-page-editor')?.remove();
+    form=null;
     const row=trigger.closest('tr');
     let host;
     if(row){
@@ -161,20 +173,25 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     }else{
       host=document.createElement('div');
       host.innerHTML=markup;
-      trigger.closest('.sm-section-title').after(host);
+      const actions=trigger.closest('.sm-titlebar,.sm-section-title')||trigger.closest('.sm-actions,.sm-form-footer')||trigger;
+      actions.after(host);
     }
-    host.dataset.groupEditor='';
+    host.dataset.inlineEditor='';
     const editor=host.querySelector('form');
-    editor.id='op-group-editor';
+    editor.id='op-inline-editor';
     trigger.setAttribute('aria-controls',editor.id);
     trigger.setAttribute('aria-expanded','true');
     context=record;
-    editor.querySelector('select,input:not([type="hidden"])')?.focus({preventScroll:true});
+    picker.enhance();syncForms();
+    editor.querySelector('input:not([type="hidden"]):not(:disabled),select:not(:disabled),textarea:not(:disabled)')?.focus({preventScroll:true});
     editor.scrollIntoView({block:editor.offsetHeight>window.innerHeight?'start':'nearest'});
   }
-  function openForm(kind,record=null){
+  function openForm(kind,record=null,trigger=null){
     requirePermission(formPermission(kind));
-    context=record;form=kind==='credit-request'?creditRequestForm(data.accounts||[],record):kind==='start-credit'?startCreditForm(record):kind==='complete-credit'?completeCreditForm(record):kind==='add-account'?forms.personalAccountForm():kind==='rename-account'?forms.personalAccountForm(record):['seat-request','renew-request'].includes(kind)?forms.personalRequestForm(record,{renewal:kind==='renew-request',reasons:data.reasons||[],otherCode:data.otherCode}):kind==='add-user'||kind==='edit-user'?forms.userForm(record,data.departments,{canManageScores:can('departments.manage')}):kind==='department'?forms.departmentForm(record):kind==='approve-signup'?forms.signupForm(record,data.departments):kind==='start-request'?forms.startRequestForm(record,{sources:data.adminAccounts||[],canConvert:can('capacity.manage'),capacity:data.capacity}):kind==='correct-account'?forms.correctionForm(record):kind==='capacity'?forms.capacityForm(data.capacity):kind==='abort-operation'?forms.abortForm(record,{canCapacity:can('capacity.manage')}):['direct','return','reclaim','scheduled_downgrade','paid_conversion'].includes(kind)?forms.directForm(record,{kind,canConvert:can('capacity.manage')}):forms.simpleReasonForm(kind,record?.id,({ 'reject-request':'رد درخواست','revalidate-request':'بازبینی درخواست','reject-signup':'رد ثبت‌نام','defer-operation':'ثبت موعد اثر','cancel-operation':'لغو پیگیری','reject-credit':'رد درخواست اعتبار' })[kind]||'ثبت دلیل',{date:kind==='defer-operation'});render();content.querySelector('.sm-form-panel input:not([type="hidden"]),.sm-form-panel textarea,.sm-form-panel select')?.focus({preventScroll:true});
+    const markup=kind==='credit-request'?creditRequestForm(data.accounts||[],record):kind==='start-credit'?startCreditForm(record):kind==='complete-credit'?completeCreditForm(record):kind==='add-account'?forms.personalAccountForm():kind==='rename-account'?forms.personalAccountForm(record):['seat-request','renew-request'].includes(kind)?forms.personalRequestForm(record,{renewal:kind==='renew-request',reasons:data.reasons||[],otherCode:data.otherCode}):kind==='add-user'||kind==='edit-user'?forms.userForm(record,data.departments,{canManageScores:can('departments.manage')}):kind==='department'?forms.departmentForm(record):kind==='approve-signup'?forms.signupForm(record,data.departments):kind==='start-request'?forms.startRequestForm(record,{sources:data.adminAccounts||[],canConvert:can('capacity.manage'),capacity:data.capacity}):kind==='correct-account'?forms.correctionForm(record):kind==='capacity'?forms.capacityForm(data.capacity):kind==='abort-operation'?forms.abortForm(record,{canCapacity:can('capacity.manage')}):['direct','return','reclaim','scheduled_downgrade','paid_conversion'].includes(kind)?forms.directForm(record,{kind,canConvert:can('capacity.manage')}):forms.simpleReasonForm(kind,record?.id,({ 'reject-request':'رد درخواست','revalidate-request':'بازبینی درخواست','reject-signup':'رد ثبت‌نام','defer-operation':'ثبت موعد اثر','cancel-operation':'لغو پیگیری','reject-credit':'رد درخواست اعتبار' })[kind]||'ثبت دلیل',{date:kind==='defer-operation'});
+    if(trigger){openInlineEditor(trigger,markup,record);return;}
+    context=record;form=markup;render();
+    content.querySelector('#op-page-editor')?.querySelector('input:not([type="hidden"]),textarea,select')?.focus({preventScroll:true});
   }
   function dateBounds(input){const form=input.closest('form'),name=input.name,kind=form?.dataset.opForm,today=iranDays().today,start=parseJalali(form?.elements.start?.value||form?.elements.target_start?.value);if(kind==='summary-filter')return name==='to_day'?{minInclusive:parseJalali(form.elements.from_day?.value)||undefined,maxInclusive:today}:{maxInclusive:parseJalali(form.elements.to_day?.value)||today};if(name==='period_end'&&kind==='complete-credit')return{minInclusive:parseJalali(form.elements.observed_day?.value)||today};if(name==='observed_day')return{maxInclusive:today,maxReason:'روز مشاهده نباید بعد از امروز ایران باشد.'};if(name==='effect_day')return{minInclusive:shiftJalaliDays(today,1)};if(kind==='seat-request')return name==='start'?{minInclusive:today}:{minExclusive:start||today};if(kind==='renew-request'||kind==='start-request'&&name==='approved_end')return{minInclusive:today,minExclusive:context?.end||data.request?.account.end};if(name.endsWith('end')){const prefix=name.replace(/end$/,'start'),value=parseJalali(form?.elements[prefix]?.value);return value?{minExclusive:value}:{};}return{};}
   function syncForms(){for(const f of content.querySelectorAll('[data-op-form]')){
@@ -205,7 +222,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       else if(command.route.startsWith('/admin/credit-requests/')&&result.request?.id)route={page:'seats',tab:'credits',creditId:result.request.id,day:route.day};
       else if(command.route.startsWith('/credit-requests')&&result.request?.id)route={page:'requests',tab:'credits',creditId:result.request.id};
       else if(command.route==='/requests'&&result.request?.id)route={page:'requests',requestId:result.request.id};
-      const anchor=f?.closest('[data-group-editor]')?content.querySelector('[aria-controls="op-group-editor"]'):null;
+      const anchor=f?.closest('[data-inline-editor]')?content.querySelector('[aria-controls="op-inline-editor"]'):null;
       navigate(routeUrl(baseUrl,route));await load({anchor});notify('تغییر ثبت شد.');
     }catch(error){if(destroyed||error.code==='aborted')return;if(['network_error','invalid_response'].includes(error.code)){uncertain={command};notify('نتیجهٔ ثبت مشخص نیست. «بررسی دوبارهٔ همان ثبت» را بزنید؛ درخواست تازه‌ای نسازید.',true);notice.insertAdjacentHTML('beforeend',button('بررسی دوبارهٔ همان ثبت','retry-command'));}
       else if(error.status===409){uncertain=null;await load();notify(error.message+' اطلاعات تازه دریافت شد؛ دوباره بررسی کنید.',true);}
@@ -254,7 +271,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       else if(action==='requests-tab')routeTo({page:'requests',tab:id});
       else if(action==='my-summary')routeTo({page:'requests',summary:true});
       else if(action==='person-summary'){requirePermission('seats.manage');routeTo({page:'seats',summary:true,summaryOwnerId:objectId(id)});}
-      else if(action==='credit-request'){const account=id?ownAccount(id):null;if(id&&!account)throw new ApiError('not_found','حساب پیدا نشد.');openForm('credit-request',account);}
+      else if(action==='credit-request'){const account=id?ownAccount(id):null;if(id&&!account)throw new ApiError('not_found','حساب پیدا نشد.');openForm('credit-request',account,b);}
       else if(['start-credit','complete-credit','reject-credit'].includes(action))openForm(action,data.creditRequest);
       else if(action==='cancel-credit'){const request=data.creditRequest||(data.creditRequests||[]).find(r=>r.id===Number(id));if(!request||request.status!=='pending')throw new ApiError('conflict','درخواست دیگر در انتظار بررسی نیست.');await send({route:'/credit-requests/cancel',body:{request_id:request.id}});}
       else if(action==='more-credits')routeTo({...route,before:objectId(id)});
@@ -268,14 +285,14 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       else if(action==='bulk-add'){bulkRows=bulkDraftRows(content.querySelector('[data-op-form="bulk-preview"]'));bulkRows.push({});bulkPreview=null;render();}else if(action==='bulk-remove'){bulkRows=bulkDraftRows(content.querySelector('[data-op-form="bulk-preview"]'));bulkRows.splice(Number(id),1);bulkPreview=null;render();}
       else if(action==='bulk-commit'&&bulkPreview?.valid)await send({route:'/admin/users/bulk-commit',body:{batch_id:bulkPreview.batch_id}});
       else if(action==='reason-add'||action==='reason-remove'){requirePermission('settings.manage');reasonDraft=reasonRows();if(action==='reason-add')reasonDraft.push({code:'reason_'+crypto.randomUUID().replaceAll('-',''),label:''});else reasonDraft.splice(Number(id),1);content.querySelector('[data-op-form="reasons"]').outerHTML=views.reasonEditorView(reasonDraft);}
-      else if(action==='close-form'&&b.closest('[data-group-editor]'))closeGroupEditor(true);
+      else if(action==='close-form'&&b.closest('[data-inline-editor]'))closeInlineEditor(true);
       else if(action==='close-form'){form=null;context=null;render();}
-      else if(action==='add-account')openForm(action);else if(['rename-account','seat-request','renew-request'].includes(action)){const account=ownAccount(id);if(!account)throw new ApiError('not_found','حساب پیدا نشد.');if(account.locked&&action!=='rename-account')throw new ApiError('account_locked','این حساب در حال رسیدگی است؛ پس از پایان عملیات درخواست تازه ثبت کنید.');openForm(action,account);}
+      else if(action==='add-account')openForm(action,null,b);else if(['rename-account','seat-request','renew-request'].includes(action)){const account=ownAccount(id);if(!account)throw new ApiError('not_found','حساب پیدا نشد.');if(account.locked&&action!=='rename-account')throw new ApiError('account_locked','این حساب در حال رسیدگی است؛ پس از پایان عملیات درخواست تازه ثبت کنید.');openForm(action,account,b);}
       else if(action==='cancel-request'){const request=data.request||(data.requests||[]).find(r=>r.id===Number(id));if(!request||request.status!=='pending')throw new ApiError('conflict','درخواست دیگر در انتظار بررسی نیست.');await send({route:'/requests/cancel',body:{request_id:request.id}});}
-      else if(action==='add-user')openForm(action);else if(action==='edit-user')openForm(action,data.users.find(u=>u.id===Number(id)));else if(action==='add-department')openForm('department');else if(action==='edit-department')openForm('department',data.departments.find(d=>d.id===Number(id)));
-      else if(action==='approve-signup'||action==='reject-signup')openForm(action,data.users.find(u=>u.id===Number(id)));else if(action==='add-access-group')openGroupEditor(b);else if(action==='edit-access-group'){const group=data.groups?.find(g=>g.id===Number(id));if(!group)throw new ApiError('not_found','گروه پیدا نشد.');openGroupEditor(b,group);}else if(action==='assign-access-group'){const user=data.users?.find(u=>u.id===Number(id)&&u.approval_status==='approved');if(!user)throw new ApiError('not_found','کاربر تأییدشده پیدا نشد.');openGroupEditor(b,user);}else if(action==='capacity')openForm(action);
+      else if(action==='add-user')openForm(action,null,b);else if(action==='edit-user')openForm(action,data.users.find(u=>u.id===Number(id)),b);else if(action==='add-department')openForm('department',null,b);else if(action==='edit-department')openForm('department',data.departments.find(d=>d.id===Number(id)),b);
+      else if(action==='approve-signup'||action==='reject-signup')openForm(action,data.users.find(u=>u.id===Number(id)),b);else if(action==='add-access-group')openGroupEditor(b);else if(action==='edit-access-group'){const group=data.groups?.find(g=>g.id===Number(id));if(!group)throw new ApiError('not_found','گروه پیدا نشد.');openGroupEditor(b,group);}else if(action==='assign-access-group'){const user=data.users?.find(u=>u.id===Number(id)&&u.approval_status==='approved');if(!user)throw new ApiError('not_found','کاربر تأییدشده پیدا نشد.');openGroupEditor(b,user);}else if(action==='capacity')openForm(action,null,b);
       else if(['start-request','reject-request','revalidate-request'].includes(action))openForm(action,data.request);
-      else if(['direct-operation','return-account','reclaim-account','schedule-account','convert-account','correct-account'].includes(action)){const a=adminAccount(id);if(!a)throw new ApiError('not_found','اطلاعات تازهٔ حساب را باز کنید.');openForm(({ 'direct-operation':'direct','return-account':'return','reclaim-account':'reclaim','schedule-account':'scheduled_downgrade','convert-account':'paid_conversion','correct-account':'correct-account' })[action],a);}
+      else if(['direct-operation','return-account','reclaim-account','schedule-account','convert-account','correct-account'].includes(action)){const a=adminAccount(id);if(!a)throw new ApiError('not_found','اطلاعات تازهٔ حساب را باز کنید.');openForm(({ 'direct-operation':'direct','return-account':'return','reclaim-account':'reclaim','schedule-account':'scheduled_downgrade','convert-account':'paid_conversion','correct-account':'correct-account' })[action],a,b);}
       else if(action==='defer-operation'||action==='cancel-operation'||action==='abort-operation')openForm(action,data.operation);
       else if(action==='invitation')await send({route:'/admin/operations/invitation',body:{operation_id:data.operation.id,waiting:data.operation.phase!=='waiting_invite'}});
       else if(action==='retry-command'&&uncertain)await send(uncertain.command);
