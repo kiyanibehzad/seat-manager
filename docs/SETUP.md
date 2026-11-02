@@ -1,21 +1,21 @@
-# Local setup / راه‌اندازی محلی
+# راه‌اندازی محلی و نصب روی هاست
 
-This guide covers source preparation, the localhost development helper and a clean shared-host installation. Validate the PHP/database version, HTTPS, file layout, mail and cron on the selected host before operational use.
+این راهنما آماده‌سازی سورس، اجرای محیط توسعهٔ محلی و نصب تازه روی هاست اشتراکی را توضیح می‌دهد. پیش از استفادهٔ عملیاتی، نسخهٔ PHP و پایگاه داده، HTTPS، چیدمان فایل‌ها، ارسال ایمیل و زمان‌بند را روی هاست انتخاب‌شده بررسی کنید.
 
-## 1. Prepare dependencies and assets
+## ۱. آماده‌سازی وابستگی‌ها و رابط
 
-Use PHP 8.3+ with PDO MySQL, OpenSSL, mbstring and sessions. The development service helper also needs Python 3, PHP's POSIX support and the `mariadbd` and `mariadb-install-db` commands on the executable search path. The helper targets a POSIX local development environment; Windows support has not been established.
+از PHP 8.3 یا بالاتر با PDO MySQL، OpenSSL، mbstring و نشست‌ها استفاده کنید. ابزار کمکی اجرای محلی همچنین به Python 3، پشتیبانی POSIX در PHP و فرمان‌های `mariadbd` و `mariadb-install-db` در مسیر جست‌وجوی برنامه‌ها نیاز دارد. این ابزار برای محیط توسعهٔ محلی POSIX ساخته شده و پشتیبانی آن روی ویندوز تأیید نشده است.
 
-From the repository root:
+فرمان‌های زیر را از ریشهٔ مخزن اجرا کنید.
 
 ```sh
 composer install --working-dir=backend --no-dev --prefer-dist
 node frontend/build.mjs
 ```
 
-Node.js builds `public_html/index.html`, `public_html/install.html` and their assets from the frontend sources and templates. It is not an application server. A clean checkout includes Vazirmatn web fonts and their license; the build serves them from the application's own assets, without a CDN or device font installation. All builds use the same bundled Vazirmatn fonts, including local development and the hosted application. Public package verification also checks the approved font hashes and notices.
+Node.js فایل‌های `public_html/index.html`، `public_html/install.html` و دارایی‌های رابط را از سورس و قالب‌ها می‌سازد؛ سرور اجرای برنامه نیست. سورس دریافت‌شده، فونت وزیرمتن و مجوزش را همراه دارد. فونت از فایل‌های خود برنامه بارگذاری می‌شود و به سرویس بیرونی یا نصب روی دستگاه نیاز ندارد. تمام ساخت‌ها، شامل محیط محلی و نسخهٔ هاست، از همین فونت‌ها استفاده می‌کنند. بررسی بستهٔ عمومی، هش فایل‌های تأییدشده و متن مجوز را نیز کنترل می‌کند.
 
-## 2. Start the localhost development environment
+## ۲. اجرای محیط توسعهٔ محلی
 
 ```sh
 mkdir -p storage/logs storage/sessions storage/run
@@ -23,89 +23,93 @@ python3 bin/dev-services.py start
 python3 bin/dev-services.py status
 ```
 
-On first use, the helper initializes a project-local MariaDB instance, creates private development configuration, applies migrations and creates a test-only administrator. It starts the application at **http://127.0.0.1:8787/** and a local SMTP receiver with no external forwarding. The project's reminder/email runner runs each minute. Existing configuration and data are retained on ordinary restarts.
+در اجرای اول، ابزار یک نمونهٔ MariaDB مخصوص پروژه و تنظیمات خصوصی توسعه می‌سازد، ارتقاهای پایگاه داده را اعمال می‌کند و مدیر آزمایشی ایجاد می‌کند. برنامه روی **http://127.0.0.1:8787/** و گیرندهٔ SMTP محلی بدون ارسال به بیرون اجرا می‌شوند. پردازشگر ایمیل و یادآوری هر دقیقه اجرا می‌شود. راه‌اندازی دوبارهٔ معمول، داده و تنظیمات موجود را حفظ می‌کند.
 
-Open the generated `storage/dev-access.txt` locally to obtain the initial development login. Do not commit, publish or paste that file into an issue. Passwords and tokens are intentionally absent from this guide.
+برای دریافت اطلاعات ورود اولیهٔ محیط توسعه، فایل ساخته‌شدهٔ `storage/dev-access.txt` را فقط روی دستگاه خود باز کنید. این فایل را در گیت، گزارش خطا یا فضای عمومی منتشر نکنید. رمز و توکن در این راهنما نوشته نشده‌اند.
 
 ```sh
 python3 bin/dev-services.py stop
 ```
 
-This stops the development processes recorded by the helper. The helper also maintains separate test and subfolder-test endpoints; these are development tools, not extra production services.
+این فرمان، پردازش‌های ثبت‌شده توسط ابزار را متوقف می‌کند. ابزار، نشانی‌های مستقل برای آزمون و آزمون نصب در زیرپوشه نیز دارد؛ این‌ها ابزار توسعه‌اند و سرویس عملیاتی اضافه نیستند.
 
-## 3. Understand the local data and email behavior
+## ۳. رفتار داده و ایمیل در محیط محلی
 
-- The main development database and the integration-test database are separate.
-- Development/test email is restricted to the localhost SMTP receiver. It does not reach employees' corporate inboxes.
-- Reminder processing does not automatically release a seat. An administrator still performs the change in OpenAI and records the checked result.
-- The UI is built for manual seat administration; no workspace Admin API key is requested by this application.
+- پایگاه دادهٔ اصلی توسعه و پایگاه دادهٔ آزمون یکپارچه جدا هستند.
+- ایمیل توسعه و آزمون فقط به گیرندهٔ SMTP محلی می‌رود و به صندوق سازمانی کارکنان ارسال نمی‌شود.
+- پردازش یادآوری، سیت را خودکار آزاد نمی‌کند؛ مدیر تغییر را در OpenAI انجام می‌دهد و نتیجهٔ بررسی‌شده را ثبت می‌کند.
+- مدیریت سیت دستی است و برنامه کلید Admin API فضای کاری درخواست نمی‌کند.
 
-برای اجرای محلی، پس از نصب وابستگی‌ها و ساخت رابط، فرمان `start` را اجرا کنید. اطلاعات ورود اولیه فقط در فایل خصوصی محلی ایجاد می‌شود. ایمیل‌های این محیط آزمایشی هستند و به ایمیل سازمانی واقعی ارسال نمی‌شوند. با توقف و اجرای معمول سرویس‌ها، دادهٔ موجود پاک نمی‌شود.
+با توقف و اجرای معمول سرویس‌ها، دادهٔ موجود پاک نمی‌شود.
 
-## 4. Tests
+## ۴. اجرای آزمون‌ها
 
-Frontend behavior tests:
+آزمون‌های رفتار رابط با فرمان زیر اجرا می‌شوند.
 
 ```sh
 node --test frontend/tests/*.test.mjs
 ```
 
-The backend integration suites require the isolated test environment and database. `tests/backend/run.php` and `tests/backend/operations.php` deliberately recreate the test database. The browser fixture requires an explicit reset flag and also replaces test data. Run these only when that test database is disposable; never point them at the main development or a production database.
+آزمون‌های یکپارچهٔ بک‌اند به محیط و پایگاه دادهٔ آزمایشی جدا نیاز دارند. فایل‌های `tests/backend/run.php` و `tests/backend/operations.php` عمداً پایگاه دادهٔ آزمون را بازسازی می‌کنند. داده‌ساز آزمون مرورگر هم به پرچم صریح بازنشانی نیاز دارد و داده‌های آزمایشی را جایگزین می‌کند. این آزمون‌ها را فقط با پایگاه دادهٔ آزمایشیِ قابل حذف اجرا کنید و آن‌ها را به پایگاه دادهٔ اصلی توسعه یا عملیاتی متصل نکنید.
 
-## Clean shared-host installation
+## نصب تازه روی هاست اشتراکی
 
-The intended runtime is PHP and MySQL/MariaDB with InnoDB; only `public_html/` should be web-accessible. Keep `backend/`, `config/`, `database/`, `storage/` and build/development tools outside the document root. Use [config/app.example.php](../config/app.example.php) as the configuration reference; never commit a real `config/local.php`.
+محیط اجرا PHP و MySQL یا MariaDB با InnoDB است. فقط `public_html/` باید از وب قابل دسترسی باشد. پوشه‌های `backend/`، `config/`، `database/`، `storage/` و ابزارهای توسعه و ساخت را بیرون ریشهٔ عمومی وب نگه دارید. [نمونهٔ تنظیمات برنامه](../config/app.example.php) مرجع پیکربندی است؛ فایل واقعی `config/local.php` را در گیت ثبت نکنید.
 
-Build the combined release on the development machine after preparing dependencies and frontend assets:
+پس از آماده‌سازی وابستگی‌ها و رابط روی دستگاه توسعه، بستهٔ کامل را بسازید.
 
 ```sh
 php bin/build-release.php /absolute/private/output/seat-manager-release.zip
 ```
 
-The archive includes the prepared PHP dependencies, API, frontend, `install.html`, migrations and example configuration. It contains no `config/local.php`, application/setup key, database credentials, users, sessions or local test data. `bin/build-package.php` remains the older backend-only builder; use `build-release.php` for the combined application. Keep release archives outside the web document root.
+بسته شامل وابستگی‌های آمادهٔ PHP، API، رابط، `install.html`، ارتقاهای پایگاه داده و نمونهٔ تنظیمات است. تنظیمات خصوصی، کلید برنامه و نصب، اطلاعات ورود پایگاه داده، کاربران، نشست‌ها و داده‌های آزمون محلی را همراه ندارد. فرمان قدیمی `bin/build-package.php` اکنون برای سازگاری به همین سازندهٔ بستهٔ کامل هدایت می‌شود. آرشیو خروجی را بیرون ریشهٔ عمومی وب نگه دارید.
 
-Create a dedicated database/user on the target and privately create `config/local.php` from the example. Set the real HTTPS `app_url`, database connection, `environment=production` and secure sessions. Generate a fresh 32-byte random application key, base64-encode it into `app_key`, and generate a separate high-entropy one-time setup token. Set `setup.enabled=true` and store only that token's SHA-256 hash in `setup.token_hash`. Keep the original token privately outside the document root, Git, URLs and logs. Retain the application key with the database backup; changing it makes existing encrypted email payloads unreadable.
+روی هاست، پایگاه داده و کاربر اختصاصی بسازید و به‌صورت خصوصی `config/local.php` را از نمونه آماده کنید. نشانی واقعی HTTPS در `app_url`، اتصال پایگاه داده، `environment=production` و نشست امن را تنظیم کنید. یک کلید تصادفی تازهٔ ۳۲بایتی برای برنامه بسازید و مقدار base64 آن را در `app_key` قرار دهید. یک کلید نصب یک‌بارمصرف مستقل با تصادفی‌بودن کافی نیز بسازید. مقدار `setup.enabled=true` را تنظیم کنید و فقط هش SHA-256 کلید نصب را در `setup.token_hash` نگه دارید. اصل کلید نصب باید خصوصی و بیرون ریشهٔ وب، گیت، نشانی‌ها و لاگ‌ها بماند. کلید برنامه را همراه پشتیبان پایگاه داده حفظ کنید؛ تغییر آن، خواندن ایمیل‌های رمزنگاری‌شدهٔ قبلی را ناممکن می‌کند.
 
-Open **`/install.html` over HTTPS**. The person creating the first chief administrator enters the private setup token, their email, first/last name, initial department and a chosen password twice. There is **no fixed/default login**. The password follows the same policy as other new passwords: at least 12 Unicode characters and at most 72 UTF-8 bytes. The form gets a session CSRF token and submits JSON to `api/install.php` with `X-CSRF-Token` and `X-Install-Token`; neither secret belongs in a URL or browser storage.
+صفحهٔ **`/install.html` را روی HTTPS** باز کنید. سازندهٔ اولین مدیر کل، کلید نصب خصوصی، ایمیل، نام و نام خانوادگی، بخش اولیه و رمز دلخواه را با تکرار آن وارد می‌کند. اطلاعات ورود ثابت یا پیش‌فرض وجود ندارد. رمز، مانند دیگر رمزهای تازه، حداقل ۱۲ نویسهٔ یونیکد و حداکثر ۷۲ بایت UTF-8 دارد. فرم، توکن نشست CSRF می‌گیرد و JSON را با `X-CSRF-Token` و `X-Install-Token` به `api/install.php` می‌فرستد؛ هیچ‌یک از این کلیدها نباید در نشانی یا ذخیره‌سازی مرورگر قرار بگیرد.
 
-The first chief can sign in immediately with the same email and chosen password. SMTP is not required for this initial flow and the chosen password is never emailed or returned by the API. Once the chief exists, the install form closes and the endpoint cannot install again or apply pending migrations through the retained setup key. You may then set `setup.enabled=false`, clear `setup.token_hash` and remove the privately retained original setup token. This additional cleanup does not replace the server's one-time installation guard.
+مدیر کل بلافاصله با همان ایمیل و رمز انتخاب‌شده وارد می‌شود. این مرحله به SMTP نیاز ندارد و رمز انتخاب‌شده ایمیل نمی‌شود یا در API برنمی‌گردد. پس از ایجاد مدیر، فرم نصب بسته می‌شود و کلید باقی‌مانده نمی‌تواند نصب یا ارتقا را دوباره اجرا کند. سپس می‌توانید `setup.enabled=false` بگذارید، `setup.token_hash` را خالی کنید و اصل خصوصی کلید نصب را حذف کنید. این پاک‌سازی تکمیلی، جای کنترل نصب یک‌بارمصرف سرور را نمی‌گیرد.
 
-Before inviting employees or relying on verification, password recovery and email reminders, the chief configures the sender in **Settings → Email**. SMTP is the default; PHP mail is a secondary hosting option. Migration 004 stores these settings encrypted under the installation's existing app_key and defaults automatic delivery OFF, even when legacy SMTP configuration is enabled. The API never returns the SMTP password. Save the settings, explicitly check the connection, send a test to a specified recipient and inspect the inbox/spam before enabling automatic delivery. For ongoing delivery/reminders, configure the hosting control panel to run the private `bin/cron.php` with compatible PHP CLI each minute and verify successive scheduler timestamps in Settings. See [email setup](backend/MAIL.md). Initial login is independent of email and does not prove delivery. The older token-gated JSON installation mode without a chosen password is retained only for installations with explicitly prepared and enabled encrypted mail settings; a fresh installation requires the chosen-password flow.
+پیش از دعوت کارکنان یا اتکا به تأیید ایمیل، بازیابی رمز و یادآوری، مدیر کل فرستنده را در **تنظیمات ← ایمیل و ارسال** آماده می‌کند. SMTP روش پیش‌فرض و ارسال PHP گزینهٔ جایگزین هاست است. ارتقای ۰۰۴ تنظیمات را با `app_key` نصب رمزنگاری می‌کند و حتی اگر تنظیم SMTP قدیمی فعال باشد، ارسال خودکار را ابتدا خاموش نگه می‌دارد. API رمز SMTP را برنمی‌گرداند. تنظیمات را ذخیره کنید، بررسی اتصال را بزنید، ایمیل آزمایشی را به گیرندهٔ مشخص بفرستید و صندوق ورودی و هرزنامه را ببینید؛ سپس ارسال خودکار را فعال کنید.
 
-Fresh installation creates only the chief administrator, initial department, allowed email domain and default access groups. It does not import local test users, OpenAI accounts or seat assignments. After login, enter the organization's actual users, departments and purchased seat capacities.
+برای ارسال و یادآوری مستمر، کنترل‌پنل هاست را تنظیم کنید تا `bin/cron.php` خصوصی را با PHP CLI سازگار، هر دقیقه اجرا کند. زمان‌های متوالی اجرای زمان‌بند را در تنظیمات بررسی کنید. جزئیات در [راهنمای ایمیل](backend/MAIL.md) آمده است. ورود اولیه، دریافت ایمیل را اثبات نمی‌کند. روش نصب JSON قدیمی با کلید نصب و بدون رمز انتخاب‌شده، فقط برای نصب‌هایی باقی مانده که تنظیمات رمزنگاری‌شدهٔ ایمیل را صریح آماده و فعال کرده‌اند؛ نصب تازه باید از فرم انتخاب رمز استفاده کند.
 
-Composer dependencies and frontend assets should be prepared before uploading to shared hosting; neither Composer nor Node.js needs to run there. Retain dependency licenses in the prepared package. See the [installation recipe](backend/INSTALL.md), [identity API](backend/API.md), [operations API](backend/API-OPERATIONS.md) and [operations guide](backend/OPERATIONS.md) for the current contracts and worker behavior.
+نصب تازه فقط مدیر کل، بخش اولیه، دامنهٔ ایمیل مجاز و گروه‌های دسترسی پیش‌فرض را می‌سازد. پس از ورود، کاربران، بخش‌ها، حساب‌ها و ظرفیت واقعی سیت‌های خریداری‌شدهٔ سازمان خودتان را وارد کنید.
 
-## Access-group integration (migration 003)
+وابستگی‌های Composer و فایل‌های رابط باید پیش از بارگذاری روی هاست آماده باشند؛ اجرای Composer و Node.js روی هاست لازم نیست. مجوز وابستگی‌ها را در بسته حفظ کنید. جزئیات قراردادها و کارهای دوره‌ای در [نصب](backend/INSTALL.md)، [رابط هویت](backend/API.md)، [رابط عملیات](backend/API-OPERATIONS.md) و [کارهای دوره‌ای](backend/OPERATIONS.md) آمده است.
 
-The current access model is one access group per user, separate from the organizational department. Read [ACCESS-GROUPS-CONTRACT.md](backend/ACCESS-GROUPS-CONTRACT.md) for the five capability checkboxes and their dependencies. The protected `user` group remains personal-only; only the protected chief group can manage financial data, purchased capacity, main settings and group assignments.
+## یکپارچه‌سازی گروه‌های دسترسی در ارتقای ۰۰۳
 
-For an existing installation, pause writes and the mail/reminder worker and retain one coordinated private snapshot of the database, configuration/app_key, backend/API and frontend assets. DDL is not fully transactional; rollback restores that complete matching set while writes and cron remain stopped. Migration 003 adds the group tables and membership/notification columns, maps existing users without changing their organization, accounts or seat history, and increments authentication versions. Existing sessions will need to sign in again. Migration 004 adds encrypted email settings and service status without changing users, assignments or the existing queue; automatic delivery starts OFF. Do not edit applied checksummed migrations.
+هر کاربر یک گروه دسترسی دارد که از بخش سازمانی مستقل است. پنج قابلیت و وابستگی آن‌ها در [قرارداد گروه‌های دسترسی](backend/ACCESS-GROUPS-CONTRACT.md) آمده است. گروه محافظت‌شدهٔ `user` فقط دسترسی شخصی دارد. فقط گروه محافظت‌شدهٔ مدیر کل، دادهٔ مالی، ظرفیت خریداری‌شده، تنظیمات اصلی و انتساب گروه‌ها را مدیریت می‌کند.
 
-After selecting the **intended target configuration**, the existing CLI migrator is sufficient:
+برای نصب موجود، ثبت تغییرات و پردازشگر ایمیل و یادآوری را متوقف کنید و یک پشتیبان خصوصی هماهنگ از پایگاه داده، تنظیمات و `app_key`، بک‌اند و API و فایل‌های رابط بگیرید. دستورهای تغییر ساختار پایگاه داده کاملاً تراکنشی نیستند؛ بازگشت باید مجموعهٔ کامل و هماهنگ را در حالی برگرداند که ثبت تغییرات و زمان‌بند همچنان متوقف‌اند.
+
+ارتقای ۰۰۳ جدول‌های گروه و ستون‌های عضویت و اعلان را اضافه می‌کند، کاربران موجود را بدون تغییر سازمان، حساب یا سابقهٔ سیت نگاشت می‌کند و نسخه‌های احراز هویت را افزایش می‌دهد. نشست‌های قبلی باید دوباره وارد شوند. ارتقای ۰۰۴ تنظیمات رمزنگاری‌شدهٔ ایمیل و وضعیت سرویس را اضافه می‌کند و کاربران، تخصیص‌ها و صف موجود را حفظ می‌کند؛ ارسال خودکار ابتدا خاموش است. فایل‌های ارتقای اعمال‌شده و دارای هش را ویرایش نکنید.
+
+پس از انتخاب **تنظیمات خصوصی مقصد مورد نظر**، ارتقادهندهٔ خط فرمان موجود کافی است.
 
 ```sh
 ACC_CONFIG=/absolute/private/config-for-selected-target.php php /absolute/path/openai-acc-manager/bin/migrate.php
 ```
 
-Use this command only with the intended target configuration and a coordinated backup/maintenance window. The localhost service helper also applies available migrations on startup, so do not use its `start` as a read-only readiness check before integration is approved. A fresh interactive installation applies its initial migrations itself; the closed installer is not an upgrade mechanism.
+این فرمان را فقط با تنظیمات مقصد درست و در بازهٔ نگهداری و پشتیبان‌گیری هماهنگ اجرا کنید. ابزار اجرای محلی نیز هنگام شروع، ارتقاهای موجود را اعمال می‌کند؛ از `start` به‌عنوان بررسیِ صرفاً خواندنیِ آمادگی، پیش از تأیید یکپارچه‌سازی استفاده نکنید. نصب تازه، ارتقاهای اولیهٔ خود را اجرا می‌کند؛ نصب‌کنندهٔ بسته‌شده ابزار ارتقای نصب موجود نیست.
 
-Before 003 is applied, existing role behavior remains available and `session.access_groups_ready` is false; group-edit endpoints return `503 migration_required`. After migration, permissions and managerial notification recipients come from the real group. `app_role` is only a legacy compatibility label.
+پیش از اعمال ۰۰۳، رفتار نقش‌های قبلی در دسترس است، مقدار `session.access_groups_ready` برابر false است و مسیرهای ویرایش گروه، `503 migration_required` می‌دهند. پس از ارتقا، دسترسی‌ها و گیرندگان اعلان مدیریتی از گروه واقعی محاسبه می‌شوند. `app_role` فقط برچسب سازگاری قدیمی است.
 
-The isolated access-group regression can run locally without resetting the existing QA fixture:
+آزمون مستقل گروه‌های دسترسی بدون بازنشانی دادهٔ فعلی آزمون مرورگر قابل اجراست.
 
 ```sh
 php tests/backend/access-groups.php
 ```
 
-It guards the existing project-only MariaDB instance, creates its own random database/user, starts a temporary localhost HTTP server with separate sessions, tests baseline-to-group upgrade and fresh installation, then removes only its own temporary resources. It does not read the human login file, private main/QA configuration or deployment backups. Existing destructive suites must use their independently configured database/port harness; they must not be pointed at QA while browser testing is in progress.
+این آزمون، نمونهٔ MariaDB مخصوص پروژه را کنترل می‌کند، پایگاه داده و کاربر تصادفی خودش را می‌سازد، سرور HTTP موقت محلی با نشست‌های جدا اجرا می‌کند و ارتقا و نصب تازه را بررسی می‌کند. در پایان فقط منابع موقت خودش را حذف می‌کند. فایل ورود کاربر، تنظیمات خصوصی اصلی و آزمون مرورگر یا پشتیبان استقرار را نمی‌خواند. مجموعه‌آزمون‌های دارای بازنشانی باید از پایگاه داده و درگاه مستقل خود استفاده کنند؛ هنگام بررسی مرورگر، آن‌ها را به محیط آزمون مرورگر متصل نکنید.
 
-## Credit-request upgrade (migration 005)
+## ارتقای درخواست کردیت در نسخهٔ ۰۰۵
 
-Migration `005_credit_requests.sql` adds credit-request and event records. Apply it through the private CLI migrator with the same coordinated backup and maintenance procedure described above. It does not change existing users, passwords, seat assignments, purchased capacity, SMTP settings or queued messages. Do not use the first-install page to upgrade an existing installation.
+فایل `005_credit_requests.sql` جدول درخواست کردیت و رویدادها را اضافه می‌کند. آن را با ارتقادهندهٔ خصوصی خط فرمان و همان روند پشتیبان‌گیری و نگهداری بالا اجرا کنید. کاربران، رمزها، تخصیص سیت، ظرفیت خریداری‌شده، SMTP و پیام‌های صف موجود حفظ می‌شوند. صفحهٔ نصب اولیه برای این ارتقا استفاده نمی‌شود.
 
-The application records an administrator's manually verified increase to an OpenAI monthly credit limit. It does not buy credits, update OpenAI, reserve a personal credit wallet, measure actual consumption or reset limits automatically. A usage-period end can be recorded as context; confirm the actual period and limits in OpenAI rather than assuming that a calendar month or a billing cycle applies. Existing backend seat endpoints remain available before the migration; the new endpoints require the migration. Keep maintenance active until migration 005 and the matching frontend/backend are installed together: the updated personal account view also reads open credit requests.
+برنامه، افزایش سقف ماهانهٔ OpenAI را پس از بررسی دستی مدیر ثبت می‌کند. خرید کردیت، تغییر خودکار OpenAI، کیف پول فردی، سنجش مصرف واقعی و بازنشانی خودکار سقف در این روند انجام نمی‌شود. پایان دوره را می‌توان برای سابقه ثبت کرد؛ دوره و سقف واقعی را از پنل OpenAI بررسی کنید و ماه تقویمی یا چرخهٔ صورتحساب را خودکار مبنا نگذارید. مسیرهای سیتِ قبلی پیش از ارتقا هم در دسترس‌اند، اما مسیرهای جدید به ارتقا نیاز دارند. حالت نگهداری را تا نصب هم‌زمان ۰۰۵ و فرانت‌اند و بک‌اند متناظر حفظ کنید؛ نمای به‌روز حساب شخصی، درخواست‌های باز کردیت را هم می‌خواند.
 
-Person summaries cover only actual seat changes recorded in this installation. Concurrent accounts have their own durations; their aggregate is labelled account-days. Planned end dates do not prove that a seat was released. Requested and completed approved credits remain separate from actual usage reported by OpenAI.
+خلاصهٔ فرد فقط تغییرات واقعی سیتِ ثبت‌شده در همین نصب را پوشش می‌دهد. حساب‌های هم‌زمان مدت مستقل دارند و مجموع آن‌ها با واحد «حساب‌روز» گزارش می‌شود. تاریخ پایان برنامه‌ریزی‌شده، آزادشدن واقعی سیت را اثبات نمی‌کند. کردیت درخواستی و افزایش تأییدشدهٔ تکمیل‌شده از مصرف واقعی گزارش‌شده توسط OpenAI جدا هستند.
 
-`tests/backend/credit-requests.php` resets its guarded test database. Run it only in a separate disposable database/HTTP harness, following the `ACC_TEST_*` overrides in `tests/backend/OperationsSupport.php`. It verifies the 004→005 upgrade, existing data preservation, authorization, concurrency, request lifecycle and summary calculations. `tests/backend/mail-templates.php` is a pure rendering/MIME check and needs no database, SMTP connection or delivery.
+آزمون `tests/backend/credit-requests.php` پایگاه دادهٔ محافظت‌شدهٔ آزمایشی خود را بازنشانی می‌کند. آن را فقط در محیط HTTP و پایگاه دادهٔ مستقل و قابل حذف، مطابق تنظیمات `ACC_TEST_*` در `tests/backend/OperationsSupport.php` اجرا کنید. این آزمون، ارتقای ۰۰۴ به ۰۰۵، حفظ داده، دسترسی، هم‌زمانی، چرخهٔ درخواست و محاسبهٔ خلاصه‌ها را بررسی می‌کند. آزمون `tests/backend/mail-templates.php` فقط رندر و MIME را کنترل می‌کند و به پایگاه داده، اتصال SMTP یا ارسال ایمیل نیاز ندارد.

@@ -8,7 +8,7 @@ PHP 8.3+، PDO MySQL، OpenSSL، mbstring، session، ctype/filter/hash/json و 
 
 ## ساخت بستهٔ کامل
 
-برای نصب روی هاست، بستهٔ آمادهٔ `seat-manager-v0.1.0-beta.2.zip` را از [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.2) دریافت کنید. این بسته رابط ساخته‌شده، وابستگی‌های PHP و سه وزن فونت وزیرمتن را دارد؛ نیازی به اجرای فرمان‌های ساخت زیر روی هاست نیست. فونت از خود برنامه بارگذاری می‌شود و روی دستگاه کاربران نیاز به نصب ندارد. فایل `SHA256SUMS.txt` کنار بسته برای بررسی دانلود و `MANIFEST.release.json` داخل آن برای بررسی فایل‌هاست. آرشیوهای خودکار «Source code» شامل وابستگی‌های آماده نیستند.
+برای نصب روی هاست، بستهٔ آمادهٔ `seat-manager-v0.1.0-beta.3.zip` را از [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.3) دریافت کنید. این بسته رابط ساخته‌شده، وابستگی‌های PHP و سه وزن فونت وزیرمتن را دارد؛ نیازی به اجرای فرمان‌های ساخت زیر روی هاست نیست. فونت از خود برنامه بارگذاری می‌شود و روی دستگاه کاربران نیاز به نصب ندارد. فایل `SHA256SUMS.txt` کنار بسته برای بررسی دانلود و `MANIFEST.release.json` داخل آن برای بررسی فایل‌هاست. آرشیوهای خودکار «Source code» شامل وابستگی‌های آماده نیستند.
 
 روی محیط توسعه، وابستگی‌ها و رابط را آماده کنید و سپس بسته بسازید:
 
@@ -18,9 +18,9 @@ node frontend/build.mjs
 php bin/build-release.php /absolute/private/output/seat-manager-release.zip
 ```
 
-بستهٔ کامل شامل backend و vendor آماده، API، index.html، install.html، assets، migrationها و config/app.example.php است. هیچ تنظیم خصوصی، app_key، کلید نصب، DB، کاربر، نشست، ایمیل یا لاگ توسعه وارد آن نمی‌شود. خروجی archive باید بیرون public_html نگهداری شود. فایل‌های مجوز وابستگی‌ها حفظ شوند؛ استفاده از فونت اختیاری محلی تابع مجوز همان فونت است.
+بستهٔ کامل شامل backend و vendor آماده، API، index.html، install.html، assets، migrationها و config/app.example.php است. هیچ تنظیم خصوصی، app_key، کلید نصب، DB، کاربر، نشست، ایمیل یا لاگ توسعه وارد آن نمی‌شود. خروجی archive باید بیرون public_html نگهداری شود. فایل‌های مجوز وابستگی‌ها و فونت وزیرمتن همراه بسته حفظ شوند.
 
-برای انتشار عمومی، رابط را با `node frontend/build.mjs --public` و بسته را با `php bin/build-release.php --public /absolute/private/output/seat-manager-public.zip` بسازید. این حالت همیشه وزیرمتن داخلی و مجوز آن را همراه می‌کند و فونت خصوصی یا ناشناخته را نمی‌پذیرد. نسخهٔ عادی بدون این گزینه، فونت شخصی دارای مجوز را در صورت موجود بودن برای استقرار همان مالک حفظ می‌کند.
+برای انتشار عمومی، رابط را با `node frontend/build.mjs --public` و بسته را با `php bin/build-release.php --public /absolute/private/output/seat-manager-public.zip` بسازید. این حالت همیشه وزیرمتن داخلی و مجوز آن را همراه می‌کند و فونت خصوصی یا ناشناخته را نمی‌پذیرد. حالت عادی نیز از همان وزیرمتن داخلی استفاده می‌کند؛ گزینهٔ عمومی بررسی‌های تکمیلی فایل‌های فونت و مجوز آن‌ها را فعال می‌کند.
 
 نام قدیمی `bin/build-package.php` فقط برای سازگاری فرمان‌ها باقی است و به همان سازندهٔ بستهٔ کامل `build-release.php` هدایت می‌شود؛ دیگر بستهٔ جداگانهٔ backend یا کلید و تنظیم آمادهٔ نصب تولید نمی‌کند. رابط و وابستگی‌ها باید از قبل آماده باشند؛ گزینهٔ `--public` و ممنوعیت خروجی در `public_html` برای هر دو فرمان یکسان‌اند. بررسی‌گر قدیمی `tests/backend/package.php` نیز فقط به بررسی‌گر خواندنی `release-package.php` هدایت می‌شود و نصب، دسترسی به تنظیم خصوصی، اتصال دیتابیس یا ارسال ایمیل انجام نمی‌دهد.
 

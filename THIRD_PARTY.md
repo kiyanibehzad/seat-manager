@@ -1,30 +1,28 @@
-# Third-party notices
+# وابستگی‌ها و مجوزهای آن‌ها
 
-No project-wide open-source license has been selected for Seat Manager. This document records dependency information and does not replace or expand any upstream license.
+این سند، نسخه و مجوز وابستگی‌های Seat Manager را ثبت می‌کند. هنوز مجوز متن‌باز سراسری برای پروژه انتخاب نشده است و این توضیحات، جایگزین مجوز اصلی هیچ‌یک از وابستگی‌ها نیستند.
 
-## PHPMailer
+## کتابخانهٔ ارسال ایمیل PHPMailer
 
-- Package: `phpmailer/phpmailer`.
-- Locked version: `v7.1.1`, recorded in [backend/composer.lock](backend/composer.lock).
-- Upstream: [PHPMailer](https://github.com/PHPMailer/PHPMailer).
-- Declared license: **LGPL-2.1-only**.
+- نام بسته `phpmailer/phpmailer` است.
+- نسخهٔ ثابت‌شده `v7.1.1` در [فایل قفل وابستگی‌های بک‌اند](backend/composer.lock) ثبت شده است.
+- کد اصلی در [مخزن PHPMailer](https://github.com/PHPMailer/PHPMailer) در دسترس است.
+- مجوز اعلام‌شده **LGPL-2.1-only** است.
 
-Composer installs the upstream license at `backend/vendor/phpmailer/phpmailer/LICENSE`. Retain that license and the component's notices when including the installed dependency in a deployment package. Generated Composer files also include their own notices in `backend/vendor/composer/`; retain those with the generated files. Installed dependencies are not committed to this repository.
+Composer متن اصلی مجوز را در `backend/vendor/phpmailer/phpmailer/LICENSE` نصب می‌کند. هنگام قراردادن این وابستگی در بستهٔ استقرار، متن مجوز و توضیحات حقوقی آن را حفظ کنید. فایل‌های ساخته‌شدهٔ Composer نیز در `backend/vendor/composer/` توضیحات مجوز خودشان را دارند و باید همراه فایل‌ها باقی بمانند. وابستگی‌های نصب‌شده در مخزن سورس ثبت نمی‌شوند.
 
-## Bundled Vazirmatn fonts
+## فونت وزیرمتن همراه برنامه
 
-- Upstream: [Vazirmatn by the Vazirmatn Project Authors](https://github.com/rastikerdar/vazirmatn).
-- Pinned release: **v33.003**.
-- License: **SIL Open Font License 1.1**, included unchanged at `frontend/vendor-fonts/vazirmatn/OFL.txt`.
-- Original author notices: `frontend/vendor-fonts/vazirmatn/AUTHORS.txt`.
-- Unmodified upstream web fonts: `Vazirmatn-Regular.woff2`, `Vazirmatn-Medium.woff2` and `Vazirmatn-Bold.woff2`.
+- منبع اصلی [پروژهٔ وزیرمتن](https://github.com/rastikerdar/vazirmatn) است.
+- نسخهٔ ثابت‌شده **v33.003** است.
+- مجوز **SIL Open Font License 1.1** با متن اصلی در `frontend/vendor-fonts/vazirmatn/OFL.txt` قرار دارد.
+- مشخصات اصلی پدیدآورندگان در `frontend/vendor-fonts/vazirmatn/AUTHORS.txt` نگهداری می‌شود.
+- فایل‌های اصلی و بدون تغییر فونت، `Vazirmatn-Regular.woff2`، `Vazirmatn-Medium.woff2` و `Vazirmatn-Bold.woff2` هستند.
 
-The public build copies these five files to `public_html/assets/fonts/vazirmatn/`. They are loaded locally from the application, without a CDN or reliance on fonts installed on the user's device. Keep the copyright, license and author notices with redistributed copies. The public release builder checks the pinned file hashes and rejects unrecognized font files.
+ساخت عمومی این پنج فایل را در `public_html/assets/fonts/vazirmatn/` قرار می‌دهد. فونت‌ها از خود برنامه بارگذاری می‌شوند و به سرویس بیرونی یا فونت نصب‌شده روی دستگاه وابسته نیستند. هنگام بازتوزیع، متن حق نشر، مجوز و مشخصات پدیدآورندگان را همراه فایل‌ها حفظ کنید. سازندهٔ بستهٔ عمومی، هش فایل‌های نسخهٔ تأییدشده را بررسی می‌کند و فایل فونت ناشناخته را نمی‌پذیرد.
 
-## Historical private font copies
+## فایل‌های قدیمی فونت خصوصی
 
-Earlier local development builds used private IRANSans copies. Those files remain excluded from the repository and public source history. The build no longer reads private fonts: local, hosted and distributable versions all use bundled Vazirmatn.
+در نسخه‌های اولیهٔ توسعهٔ محلی از فایل‌های خصوصی ایران‌سنس استفاده شده بود. این فایل‌ها از مخزن و تاریخچهٔ عمومی سورس کنار گذاشته شده‌اند. ساخت فعلی، برای محیط محلی، هاست و بستهٔ قابل انتشار، از وزیرمتن همراه برنامه استفاده می‌کند.
 
-Do not add purchased font files, purchase records or license credentials to a public commit.
-
-تمام نسخه‌های برنامه فونت آزاد وزیرمتن را همراه مجوز آن در خود برنامه دارند و به فونت نصب‌شده روی دستگاه وابسته نیستند. فایل‌های تجاری قدیمی وارد خروجی ساخته‌شده نمی‌شوند.
+فایل‌های فونت خریداری‌شده، مدارک خرید یا اطلاعات مجوز خصوصی را در تغییرات عمومی گیت قرار ندهید.

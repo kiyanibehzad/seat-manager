@@ -1,7 +1,6 @@
-# Browser security headers
+# هدرهای امنیتی مرورگر
 
-Seat Manager has no embedded-frame mode. Serve the application, installer and API
-with these response headers:
+برنامه، صفحهٔ نصب و API را با هدرهای پاسخ زیر ارائه کنید. Seat Manager برای نمایش در قاب توکار طراحی نشده است.
 
 ```http
 Content-Security-Policy: frame-ancestors 'none'
@@ -10,52 +9,31 @@ X-Content-Type-Options: nosniff
 Referrer-Policy: no-referrer
 ```
 
-The CSP adds only framing protection. It does not introduce a new restrictive
-script/style policy or break the existing interface's inline style attributes.
-The installer retains its separate existing CSP. `frame-ancestors` must be sent
-as an HTTP response header; placing it in an HTML meta element does not work.
+این سیاست CSP فقط محافظت در برابر نمایش داخل قاب را اضافه می‌کند و سیاست محدودکنندهٔ تازه‌ای برای اسکریپت و استایل ایجاد نمی‌کند؛ بنابراین ویژگی‌های استایل درون‌خطی رابط فعلی را مختل نمی‌کند. نصب‌کننده، CSP مستقل قبلی خود را حفظ می‌کند. دستور `frame-ancestors` باید در هدر پاسخ HTTP فرستاده شود و قراردادن آن در عنصر متای HTML کافی نیست.
 
-## Apache and compatible LiteSpeed
+## وب‌سرور Apache و LiteSpeed سازگار
 
-The prepared release includes `public_html/.htaccess`, including `DirectoryIndex
-index.html`. Apache 2.4 with `mod_headers` and `AllowOverride FileInfo` applies the
-policy to static HTML and PHP, including error responses. The `IfModule` guard
-keeps hosts without that module from failing, but such a host needs the headers
-configured by its administrator instead. A host forbidding `Header` directives
-must use virtual-host configuration rather than this block.
+بستهٔ آماده، فایل `public_html/.htaccess` را همراه `DirectoryIndex index.html` دارد. در Apache 2.4 با `mod_headers` و `AllowOverride FileInfo`، سیاست روی HTML و PHP، از جمله پاسخ‌های خطا، اعمال می‌شود. شرط `IfModule` مانع خطای هاست‌های فاقد این ماژول می‌شود، اما در چنین هاستی مدیر سرور باید هدرها را تنظیم کند. اگر هاست دستورهای `Header` را ممنوع کرده است، تنظیم باید در میزبان مجازی سرور انجام شود.
 
-The PHP API also sends the same policy before application bootstrap, so an
-unavailable database/configuration does not remove protection from its error
-responses. PHP cannot set headers on HTML served directly by a web server.
+API مبتنی بر PHP هم این هدرها را پیش از راه‌اندازی برنامه می‌فرستد؛ بنابراین نبود پایگاه داده یا تنظیمات، محافظت پاسخ خطا را حذف نمی‌کند. هدر HTMLای که مستقیم توسط وب‌سرور ارائه می‌شود باید در همان وب‌سرور تنظیم شود.
 
-## HSTS rollout
+## فعال‌سازی تدریجی HSTS
 
-On real HTTPS responses the initial policy is:
+سیاست اولیه در پاسخ‌های واقعی HTTPS به شکل زیر است.
 
 ```http
 Strict-Transport-Security: max-age=86400
 ```
 
-This is a one-day first rollout for this hostname. It does not include
-`includeSubDomains` or `preload`. Confirm certificate renewal and HTTPS remain
-working before increasing the duration. HSTS is deliberately absent on ordinary
-local HTTP; the PHP fallback and Apache condition do not trust
-`X-Forwarded-Proto`, `Forwarded`, a port number or the request Host as evidence of
-TLS. A reverse proxy must set the server's trusted HTTPS environment correctly
-and configure HSTS at the TLS terminator. Do not trust arbitrary client headers
-to turn HTTPS on.
+این مقدار، شروع یک‌روزه برای همین نام میزبان است و `includeSubDomains` یا `preload` ندارد. پیش از افزایش مدت، پایداری HTTPS و تمدید گواهی را بررسی کنید. در HTTP معمولی محیط محلی، HSTS فرستاده نمی‌شود. روش جایگزین PHP و شرط Apache، هدرهای `X-Forwarded-Proto` و `Forwarded`، شمارهٔ درگاه یا مقدار Host درخواست را مدرک برقرار بودن TLS نمی‌دانند.
 
-HSTS affects future visits and cannot replace a safe initial HTTP-to-HTTPS
-redirect. Configure that redirect for the fixed, intended hostname in the
-hosting panel/virtual host after HTTPS is ready. The distributed application
-does not construct redirects from a client-provided Host header, and does not
-force local HTTP development onto TLS.
+پراکسی معکوس باید محیط معتبر HTTPS وب‌سرور را درست تنظیم کند و HSTS را در نقطهٔ پایان TLS قرار دهد. هدر دلخواه کاربر نباید باعث فعال‌شدن تشخیص HTTPS شود.
 
-## Nginx or a proxy serving static files
+HSTS روی بازدیدهای بعدی اثر دارد و جای هدایت اولیهٔ امن از HTTP به HTTPS را نمی‌گیرد. پس از آماده‌شدن HTTPS، این هدایت را برای نام میزبان ثابت و مورد نظر در کنترل‌پنل یا میزبان مجازی تنظیم کنید. برنامه از Host دریافتیِ کاربر مقصد هدایت نمی‌سازد و توسعهٔ HTTP محلی را به TLS مجبور نمی‌کند.
 
-Nginx ignores `.htaccess`; a reverse proxy may serve `index.html`, `install.html`
-and assets without reaching Apache/PHP. Apply the policy in that hostname's
-HTTPS `server` block using the hosting panel's supported custom configuration:
+## وب‌سرور Nginx یا پراکسی ارائه‌دهندهٔ فایل‌های ایستا
+
+Nginx فایل `.htaccess` را اجرا نمی‌کند. همچنین ممکن است پراکسی معکوس، `index.html`، `install.html` و فایل‌های رابط را بدون مراجعه به Apache یا PHP ارائه کند. سیاست را با تنظیم سفارشی مورد پشتیبانی کنترل‌پنل، در بلوک `server` مربوط به HTTPS همان میزبان قرار دهید.
 
 ```nginx
 add_header Content-Security-Policy "frame-ancestors 'none'" always;
@@ -65,18 +43,13 @@ add_header Referrer-Policy "no-referrer" always;
 add_header Strict-Transport-Security "max-age=86400" always;
 ```
 
-Only use the HSTS line in the HTTPS server block. If a child `location` sets any
-`add_header`, check header inheritance there as well; older Nginx versions do
-not inherit the parent headers in that situation. Avoid duplicate headers from
-the proxy and PHP/backend. Use `proxy_hide_header` for headers supplied by an
-HTTP upstream or `fastcgi_hide_header` for a FastCGI upstream in the appropriate
-configuration, then add the canonical policy at the TLS server. Do not weaken
-an existing broader CSP or longer verified HSTS policy when integrating these
-defaults.
+خط HSTS فقط در بلوک HTTPS قرار می‌گیرد. اگر یک `location` فرزند، دستور `add_header` دارد، ارث‌بری هدرها را در همان محل نیز بررسی کنید؛ در نسخه‌های قدیمی‌تر Nginx، هدرهای والد در این حالت به ارث نمی‌رسند.
 
-## Verify after deployment
+از تکرار هدرها توسط پراکسی و PHP یا بک‌اند جلوگیری کنید. در تنظیم مربوط، برای بالادست HTTP از `proxy_hide_header` و برای بالادست FastCGI از `fastcgi_hide_header` استفاده کنید و سپس سیاست نهایی را در سرور TLS اضافه کنید. هنگام ترکیب این پیش‌فرض‌ها، CSP گسترده‌تر یا HSTS طولانی‌ترِ از قبل تأییدشده را ضعیف نکنید.
 
-Check the final public responses, not just the files in the ZIP:
+## بررسی پس از استقرار
+
+پاسخ نهایی مسیرهای عمومی را بررسی کنید؛ وجود فایل تنظیمات در ZIP به‌تنهایی کافی نیست.
 
 ```sh
 curl --head https://your-fixed-app-host.example/
@@ -85,18 +58,14 @@ curl --head 'https://your-fixed-app-host.example/api/index.php?route=%2Fhealth'
 curl --head https://your-fixed-app-host.example/api/install.php
 ```
 
-Confirm framing headers on all four paths and exactly one intended HSTS policy
-on HTTPS. The API may answer an unsupported HEAD method; its headers must still
-be present. Confirm normal rendering/login and the installer status still work.
-An HTTP request with `X-Forwarded-Proto: https` alone must not gain an HSTS header
-from the application. The package's PHP regression test is
-`php tests/backend/security-headers.php`; it uses only synthetic local files and
-HTTP, not an installation's database or SMTP.
+هدرهای جلوگیری از قاب‌بندی باید در هر چهار مسیر حاضر باشند و روی HTTPS دقیقاً یک سیاست HSTS مورد نظر دیده شود. ممکن است API روش HEAD را پشتیبانی نکند؛ هدرهای آن پاسخ هم باید حاضر باشند. نمایش عادی، ورود و وضعیت نصب‌کننده را نیز بررسی کنید.
 
-Primary references:
+ارسال `X-Forwarded-Proto: https` به‌تنهایی روی درخواست HTTP نباید باعث اضافه‌شدن HSTS توسط برنامه شود. آزمون این بخش با `php tests/backend/security-headers.php` اجرا می‌شود و فقط از فایل‌های ساختگی محلی و HTTP استفاده می‌کند؛ به پایگاه داده یا SMTP نصب دست نمی‌زند.
 
-- [Apache mod_headers](https://httpd.apache.org/docs/2.4/mod/mod_headers.html)
-- [Apache expression variables](https://httpd.apache.org/docs/2.4/expr.html)
-- [Nginx headers module and inheritance](https://nginx.org/en/docs/http/ngx_http_headers_module.html)
-- [HSTS behavior](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security)
-- [CSP frame-ancestors](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors)
+## منابع اصلی
+
+- [ماژول هدرهای Apache](https://httpd.apache.org/docs/2.4/mod/mod_headers.html)
+- [متغیرهای شرط‌های Apache](https://httpd.apache.org/docs/2.4/expr.html)
+- [ماژول هدرها و ارث‌بری در Nginx](https://nginx.org/en/docs/http/ngx_http_headers_module.html)
+- [رفتار HSTS](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Strict-Transport-Security)
+- [دستور frame-ancestors در CSP](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Content-Security-Policy/frame-ancestors)

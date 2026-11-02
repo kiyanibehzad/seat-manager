@@ -1,15 +1,25 @@
-# Mail API contract (launch)
+# قرارداد رابط برنامه‌نویسی تنظیمات و ارسال ایمیل
 
-Same JSON envelope/session/CSRF as existing API. All routes require an eligible **actual protected chief group**. Mail appears as one section in existing settings. No frontend changes belong to backend author.
+ساختار JSON، نشست و حفاظت CSRF مطابق رابط موجود برنامه است. تمام مسیرهای این بخش به عضویت واقعی در **گروه محافظت‌شدهٔ مدیر کل** نیاز دارند. مدیریت ایمیل یکی از بخش‌های تنظیمات برنامه است.
 
-- `GET /admin/mail` → `{settings,status}`.
-- `POST /admin/mail` → save and return same view. Fields: `delivery_enabled` boolean (default false), `transport: smtp|phpmail`, `from_email`, `from_name`, `smtp_host`, `smtp_port`, `smtp_encryption: tls|ssl` (local test sink also accepts empty), `smtp_username`, `smtp_password`, `clear_password` boolean, `expected_revision` integer. Blank/omitted password retains it; `clear_password:true` removes it. Reject simultaneous new password + clear. Response settings includes `password_configured` and `revision`, **never smtp_password**.
-- `POST /admin/mail/test-connection` → checks saved SMTP connection/auth without sending, or reports PHP mail availability (not delivery proof). `{ok,code,message}`; explicit user action only.
-- `POST /admin/mail/send-test` body `{recipient,idempotency_key}` → explicit test using saved transport, allowed while automatic delivery is off. Returns `{id,status,code,message}`. Fixed harmless test message. Does not flush other queued messages. Never automatically resend uncertain result. Replaying same key returns same result; use a fresh key for a deliberate new test.
-- `POST /admin/mail/retry` body `{id}` → manual retry only for retained safe failed-before-delivery or pending/retry rows. Never `sending/sent/uncertain/cancelled` or expired/consumed auth-token messages.
+## مسیرها
 
-`status` contains counts for all queue states, recent metadata-only items (id/category/status/attempts/timestamps/error_code/error_message/retryable), `last_success_at`, `worker_last_started_at`, `worker_last_finished_at`, `worker_last_error_code`, `cron_ready` (successful run in last 5 minutes), `cron_interval_minutes:1`, and `delivery_ready`. No address, subject, message body, tokens or credentials. Status freshness is evidence of successful execution, not proof host scheduler is installed. PHP mail success means accepted by local mail system, not inbox receipt.
+- `GET /admin/mail` تنظیمات و وضعیت سرویس را با ساختار `{settings,status}` برمی‌گرداند.
+- `POST /admin/mail` تنظیمات را ذخیره می‌کند و همان نمای تنظیمات و وضعیت را برمی‌گرداند. فیلدها شامل `delivery_enabled` با نوع بولی و مقدار پیش‌فرض خاموش، `transport: smtp|phpmail`، `from_email`، `from_name`، `smtp_host`، `smtp_port`، `smtp_encryption: tls|ssl`، `smtp_username`، `smtp_password`، `clear_password` با نوع بولی و `expected_revision` با نوع عدد صحیح هستند. گیرندهٔ آزمایشی محلی، رمزنگاری خالی را نیز می‌پذیرد. رمز خالی یا ارسال‌نشده، رمز ذخیره‌شده را حفظ می‌کند؛ `clear_password:true` آن را حذف می‌کند. ارسال هم‌زمان رمز تازه و درخواست حذف رمز رد می‌شود. پاسخ تنظیمات، `password_configured` و `revision` را دارد و مقدار `smtp_password` را برنمی‌گرداند.
+- `POST /admin/mail/test-connection` اتصال و ورود SMTP ذخیره‌شده را بدون ارسال پیام بررسی می‌کند یا در روش PHP، در دسترس‌بودن تابع ایمیل را گزارش می‌دهد. این بررسی، دریافت ایمیل را اثبات نمی‌کند. پاسخ `{ok,code,message}` است و فقط با اقدام صریح کاربر اجرا می‌شود.
+- `POST /admin/mail/send-test` با بدنهٔ `{recipient,idempotency_key}` یک پیام آزمایشی ثابت و بی‌خطر از روش ذخیره‌شده ارسال می‌کند. هنگام خاموش‌بودن ارسال خودکار هم قابل اجراست و پاسخ `{id,status,code,message}` دارد. این اقدام، پیام‌های دیگر صف را ارسال نمی‌کند. نتیجهٔ نامطمئن خودکار تکرار نمی‌شود. ارسال دوبارهٔ همان کلید، همان نتیجه را برمی‌گرداند؛ برای آزمایش تازهٔ عمدی، کلید جدید لازم است.
+- `POST /admin/mail/retry` با بدنهٔ `{id}` برای تلاش دوبارهٔ دستیِ پیام‌های معتبرِ در انتظار، قابل تکرار یا ناموفق پیش از تحویل است. پیام‌های دارای وضعیت `sending`، `sent`، `uncertain` یا `cancelled` و پیام‌های احراز هویت با توکن منقضی یا مصرف‌شده، قابل تکرار نیستند.
 
-Settings saves are revision guarded (409 on stale revision). Test actions are rate limited, redact transport diagnostics and perform no automatic send. SMTP requires TLS/SSL in production. Nonproduction permits SMTP only at `127.0.0.1:10279`; PHP mail is production-only. API returns normal 403/409/422 errors for access/conflict/input problems. Migration `004_mail_settings.sql` is additive; existing config remains untouched and retained as initial defaults. First migration always disables automatic delivery until chief enables it.
+## وضعیت سرویس
 
-Backend files planned: `backend/src/{MailSettings,MailTransport,MailWorker,Api}.php`, `database/migrations/004_mail_settings.sql`, `bin/cron.php`, isolated `tests/backend/mail-settings.php`, backend operations/readiness docs. No frontend edits, commits, deployments, real email/OpenAI calls or host cron execution.
+`status` شمار پیام‌ها در همهٔ وضعیت‌ها و اطلاعات خلاصهٔ موارد اخیر را برمی‌گرداند. اطلاعات هر مورد شامل شناسه، دسته، وضعیت، تعداد تلاش، زمان‌ها، کد و متن خطا و امکان تکرار است. همچنین `last_success_at`، `worker_last_started_at`، `worker_last_finished_at`، `worker_last_error_code`، `cron_ready`، `cron_interval_minutes:1` و `delivery_ready` در پاسخ وجود دارند. `cron_ready` از اجرای موفق در پنج دقیقهٔ اخیر به دست می‌آید.
+
+پاسخ وضعیت، آدرس، عنوان و بدنهٔ پیام، توکن یا اطلاعات ورود را ندارد. تازگی وضعیت، اجرای موفق پردازشگر را نشان می‌دهد و به‌تنهایی نصب زمان‌بند هاست را ثابت نمی‌کند. موفقیت روش PHP یعنی پیام توسط سامانهٔ ایمیل محلی پذیرفته شده است؛ دریافت در صندوق مقصد جداگانه بررسی می‌شود.
+
+## اعتبارسنجی و ارتقا
+
+ذخیرهٔ تنظیمات با شمارهٔ بازبینی کنترل می‌شود و بازبینی قدیمی خطای `409` می‌گیرد. اقدام‌های آزمایشی محدودیت نرخ دارند، جزئیات حساس خطا را حذف می‌کنند و خودکار پیامی نمی‌فرستند. SMTP در محیط عملیاتی به TLS یا SSL نیاز دارد. در محیط غیرعملیاتی، فقط گیرندهٔ SMTP محلی `127.0.0.1:10279` مجاز است؛ روش PHP فقط در محیط عملیاتی فعال است. خطاهای دسترسی، تعارض و ورودی با کدهای معمول `403`، `409` و `422` برمی‌گردند.
+
+ارتقای `004_mail_settings.sql` افزایشی است. تنظیمات قبلی را به‌عنوان مقدار اولیه حفظ می‌کند و در اولین اجرا، ارسال خودکار را تا زمان فعال‌سازی توسط مدیر کل خاموش می‌گذارد.
+
+فایل‌های مرتبط شامل `backend/src/{MailSettings,MailTransport,MailWorker,Api}.php`، `database/migrations/004_mail_settings.sql`، `bin/cron.php` و آزمون مستقل `tests/backend/mail-settings.php` هستند. این قرارداد، رفتار رابط را توضیح می‌دهد؛ اجرای ارسال واقعی یا زمان‌بند هاست، اقدام عملیاتی جداگانه است.

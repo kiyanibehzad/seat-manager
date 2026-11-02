@@ -1,53 +1,60 @@
-# Seat Manager
+<div dir="rtl">
 
-**مدیریت حساب‌ها و سیت‌ها**
+# مدیریت حساب‌ها و سیت‌ها
 
-A Persian-first internal web application for requesting and managing OpenAI accounts and Standard/Premium seats. Employees submit requests; an administrator performs the actual change in OpenAI and records its result here. Seat Manager does not automatically change an OpenAI workspace or purchase seats.
+**Seat Manager** سامانه‌ای فارسی برای مدیریت درخواست حساب، سیت و کردیت OpenAI در شرکت‌هاست. کارکنان درخواست خود را ثبت می‌کنند و مدیر، تغییر تأییدشده را در پنل OpenAI انجام می‌دهد و نتیجهٔ بررسی‌شده را در برنامه ثبت می‌کند.
 
-سامانه‌ای داخلی برای ثبت درخواست، تمدید و گردش سیت‌ها؛ با پنل شخصی کارکنان و مدیران، اولویت‌بندی، ظرفیت، سوابق، اعلان و یادآوری. اقدام واقعی در OpenAI دستی است و نتیجهٔ بررسی‌شده در برنامه ثبت می‌شود.
+هر فرد پنل شخصی خود را دارد. مدیران می‌توانند درخواست‌ها را اولویت‌بندی کنند، ظرفیت را ببینند، تمدید و انتقال سیت را پیگیری کنند و از طریق اعلان و ایمیل به کارکنان اطلاع بدهند.
 
-## Features
+## امکانات
 
-- Multiple named accounts per person; Standard, Premium and No Seat status.
-- Request queues, temporary or indefinite assignments, renewal approval and two-account transfers.
-- Additional-credit requests with a required reason, adjustable approval, manual OpenAI verification and an independent event history; requested/approved credits are not reported as actual consumption.
-- Named permission groups, independent of organizational departments and priority scores; one group per person, with administrator, HR, operator and employee presets.
-- A daily work desk, full seat/request queues and independent registration review; personal accounts and private history for every group.
-- Purchased/assigned/held/free capacity, conditional waiting-time estimates and an audit trail.
-- Corporate-domain registration, email verification and approval by an authorized reviewer; password recovery.
-- In-app notifications, queued email and temporary Premium reminders; chief-only SMTP sender settings, explicit connection/send tests and queue/scheduler status.
-- Per-person and per-account summaries of recorded Standard/Premium time, seat changes, renewals and credit requests; readable Persian HTML email with a plain-text alternative.
-- Persian RTL interface, Jalali date pickers, Iran time, light/dark/system themes and personal color palettes.
+- ثبت چند حساب نام‌گذاری‌شده برای هر نفر، با وضعیت‌های Standard، Premium و No Seat.
+- درخواست دریافت یا تغییر سیت، تخصیص موقت یا بدون تاریخ پایان، تمدید و انتقال سیت بین دو حساب.
+- درخواست کردیت اضافه با دلیل اجباری، تأیید یا تغییر مقدار توسط مدیر، بررسی دستی در OpenAI و ثبت سوابق مستقل. مقدار درخواستی، افزایش تأییدشده و مصرف واقعی، جدا از هم نگهداری و تفسیر می‌شوند.
+- گروه‌های دسترسی قابل تعریف، مستقل از بخش سازمانی و امتیاز اولویت؛ با گروه‌های آمادهٔ مدیر کل، منابع انسانی، اپراتور و کاربر. هر فرد عضو یک گروه دسترسی است.
+- میز کار روزانه، صف کامل سیت‌ها و درخواست‌ها، بررسی ثبت‌نام‌ها و دسترسی همهٔ نقش‌ها به حساب‌ها و سوابق شخصی خودشان.
+- نمایش ظرفیت خریداری‌شده، تخصیص‌یافته، کنارگذاشته‌شده و آزاد، تخمین زمان انتظار بر اساس شرایط صف و ثبت سابقهٔ اقدامات.
+- ثبت‌نام با دامنهٔ سازمانی مجاز، تأیید ایمیل و فعال‌سازی توسط مسئول مجاز، همراه با بازیابی رمز عبور.
+- اعلان داخل برنامه، صف ارسال ایمیل و یادآوری پایان سیت موقت. تنظیم فرستندهٔ SMTP در اختیار مدیر کل است و ابزار بررسی اتصال، ارسال آزمایشی و مشاهدهٔ وضعیت صف و زمان‌بند دارد.
+- خلاصهٔ مدت استفادهٔ ثبت‌شده از Standard و Premium، تغییر سیت‌ها، تمدیدها و درخواست‌های کردیت، به تفکیک فرد و حساب.
+- ایمیل‌های فارسی با قالب خوانا و نسخهٔ متنی جایگزین.
+- رابط راست‌به‌چپ، انتخاب‌گر تاریخ شمسی، ساعت ایران، تم روشن و تیره و هماهنگ با سیستم، همراه با رنگ‌بندی قابل انتخاب برای هر کاربر.
 
-## Status
+## وضعیت نسخه
 
-The frontend and backend are integrated. A combined offline release builder and a one-time first-administrator setup page are available. Each installation needs its own private database/configuration, HTTPS and reminder schedule. The chief configures the sender in Settings, explicitly tests delivery and then enables automatic email. Fresh installations and the email-settings upgrade default automatic delivery off. Initial setup lets the owner choose an email and password without waiting for email delivery. There is no default login.
+فرانت‌اند و بک‌اند به هم متصل‌اند و ابزار ساخت بستهٔ کامل نصب در دسترس است. در اولین راه‌اندازی، مالک برنامه ایمیل و رمز دلخواه خود را برای مدیر کل تعیین می‌کند. هر نصب، پایگاه داده، تنظیمات خصوصی، HTTPS و زمان‌بند یادآوری مخصوص خود را دارد.
 
-## Download and install on hosting
+مدیر کل از تنظیمات برنامه، مشخصات فرستندهٔ ایمیل را ذخیره می‌کند، اتصال و دریافت ایمیل آزمایشی را بررسی می‌کند و سپس ارسال خودکار را فعال می‌کند. ارسال خودکار پس از نصب تازه یا ارتقای تنظیمات ایمیل، ابتدا خاموش است. ورود اولیه با رمز انتخاب‌شده انجام می‌شود و به دریافت ایمیل وابسته نیست.
 
-Download **`seat-manager-v0.1.0-beta.3.zip`** from [GitHub Releases](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.3). This ready-to-install beta includes built frontend assets and PHP dependencies; **Node.js and Composer are not needed on the hosting account**. The separate `SHA256SUMS.txt` file verifies the download. GitHub's automatic “Source code” archives are for development and do not contain these prepared dependencies.
+## دریافت و نصب روی هاست
 
-نسخهٔ آمادهٔ نصب را از بخش **Assets** در صفحهٔ بالا دریافت کنید. فایل ZIP شامل رابط ساخته‌شده، وابستگی‌های PHP، فونت فارسی وزیرمتن و راهنمای نصب است. فونت از خود برنامه بارگذاری می‌شود و نیازی به نصب فونت روی سیستم یا اتصال به CDN ندارد. فقط `public_html/` باید در دسترس وب باشد؛ دیتابیس، تنظیمات خصوصی و اولین مدیر را برای نصب خودتان طبق [راهنمای نصب](docs/backend/INSTALL.md) آماده کنید. نام کاربری یا رمز پیش‌فرض وجود ندارد. این نسخه آزمایشی است و داده یا تنظیمات نصب دیگری را همراه ندارد.
+بستهٔ آمادهٔ **`seat-manager-v0.1.0-beta.3.zip`** را از [صفحهٔ انتشار نسخه](https://github.com/kiyanibehzad/seat-manager/releases/tag/v0.1.0-beta.3)، بخش فایل‌های پیوست (**Assets**)، دریافت کنید.
 
-## Persian illustrated guide
+این بسته شامل رابط ساخته‌شده، وابستگی‌های PHP، فونت وزیرمتن و راهنمای نصب است. برای نصب آن روی هاست، اجرای Node.js یا Composer لازم نیست. فایل `SHA256SUMS.txt` کنار بسته برای کنترل صحت دانلود در دسترس است. آرشیوهای خودکار **Source code** گیت‌هاب، سورس توسعه هستند و وابستگی‌های آمادهٔ نصب را ندارند.
 
-[راهنمای تصویری فارسی Seat Manager و کنسول OpenAI (PDF، ۲۸ صفحه، ویرایش ۳)](docs/user-guide/seat-manager-training-fa.pdf)
+طبق [راهنمای نصب](docs/backend/INSTALL.md)، پایگاه داده و تنظیمات خصوصی نصب خودتان را آماده کنید. فقط پوشهٔ `public_html/` باید از وب قابل دسترسی باشد. سپس صفحهٔ `/install.html` را روی HTTPS باز کنید و اولین مدیر کل را بسازید. اطلاعات ورود را خودتان هنگام نصب تعیین می‌کنید؛ این نسخهٔ آزمایشی، داده یا تنظیمات نصب دیگری را همراه ندارد.
 
-راهنما مسیر ثبت درخواست سیت، تمدید، انتقال Premium و درخواست کردیت را از پنل کارمند تا ثبت نتیجه توسط مدیر نشان می‌دهد. در ویرایش ۱۰ آبان ۱۴۰۵ (۱ نوامبر ۲۰۲۶)، بخش‌های کنسول با عکس‌های واقعی و بی‌نام به‌روز شده‌اند.
+## راهنمای تصویری فارسی
+
+[دریافت راهنمای PDF، ۲۸ صفحه، ویرایش ۳](docs/user-guide/seat-manager-training-fa.pdf)
+
+راهنما، مدیریت برنامه و مثال‌های قدم‌به‌قدم ثبت درخواست سیت، تمدید، انتقال Premium و درخواست کردیت را توضیح می‌دهد. در ویرایش ۱۰ آبان ۱۴۰۵ (۱ نوامبر ۲۰۲۶)، بخش‌های کنسول OpenAI با عکس‌های واقعی و بی‌نام به‌روز شده‌اند.
 
 | کار مدیر در کنسول | صفحه |
-|---|---|
+|---:|---:|
 | تغییر سیت یک عضو از ستون **Seat type** | ۱۰ |
 | تعیین سقف پیش‌فرض نوع سیت یا سقف کردیت یک نفر | ۱۱ و ۲۲ |
 | دیدن سهمیهٔ پنج‌ساعته و هفتگی، توکن و کردیت مصرفی یک نفر | ۲۵ و ۲۶ |
 
-[فهرست مطالب و جزئیات ویرایش](docs/user-guide/README.md)
+[فهرست کامل مطالب و جزئیات ویرایش](docs/user-guide/README.md)
 
-The hosting package includes the guide available at build time. Use the PDF above for the latest revision. For Apache/LiteSpeed and Nginx deployment headers, see [security header setup](docs/backend/SECURITY-HEADERS.md). Existing installations retain their private configuration and storage during an update; the setup page is only for a first installation.
+بستهٔ نصب، راهنمای موجود در زمان ساخت خود را دارد. برای جدیدترین ویرایش، PDF بالا را دریافت کنید. تنظیم هدرهای پاسخ برای Apache، LiteSpeed و Nginx در [راهنمای هدرهای امنیتی](docs/backend/SECURITY-HEADERS.md) آمده است. هنگام ارتقا، تنظیمات خصوصی و داده‌های نصب فعلی را حفظ کنید؛ صفحهٔ نصب اولیه مخصوص راه‌اندازی تازه است.
 
-## Build and run locally
+## ساخت و اجرای محلی
 
-Runtime: **PHP 8.3+**, PDO MySQL, OpenSSL, mbstring, sessions and a MySQL/MariaDB database using InnoDB and utf8mb4. Composer and Node.js are development/build tools; they are not required on the hosting account when prepared dependencies and built assets are deployed.
+محیط اجرا به **PHP 8.3 یا بالاتر**، افزونه‌های PDO MySQL، OpenSSL و mbstring، پشتیبانی از نشست و پایگاه دادهٔ MySQL یا MariaDB با InnoDB و utf8mb4 نیاز دارد. Composer و Node.js برای آماده‌سازی وابستگی‌ها و ساخت رابط در محیط توسعه استفاده می‌شوند.
+
+<div dir="ltr">
 
 ```sh
 git clone https://github.com/kiyanibehzad/seat-manager.git
@@ -56,20 +63,28 @@ composer install --working-dir=backend --no-dev --prefer-dist
 node frontend/build.mjs
 ```
 
-Then follow [local setup](docs/SETUP.md). The optional local service helper additionally uses Python 3 and MariaDB command-line tools. Its development mail receiver stays on localhost and does not forward messages to real inboxes.
+</div>
 
-برای راه‌اندازی محلی، [راهنمای نصب و اجرا](docs/SETUP.md) را دنبال کنید. تنظیمات خصوصی، پایگاه داده، نشست‌ها و ایمیل‌های آزمایشی وارد مخزن نمی‌شوند. فایل‌های لازم رابط از خود برنامه بارگذاری می‌شوند و به CDN وابسته نیستند.
+سپس [راهنمای راه‌اندازی محلی](docs/SETUP.md) را دنبال کنید. ابزار کمکی اجرای محلی، علاوه بر این موارد به Python 3 و ابزارهای خط فرمان MariaDB نیاز دارد. گیرندهٔ ایمیل آزمایشی آن روی همان دستگاه کار می‌کند و پیام‌ها را به صندوق ایمیل واقعی نمی‌فرستد.
 
-After building the frontend and preparing PHP dependencies, create a combined hosting archive outside the web root:
+تنظیمات خصوصی، پایگاه داده، نشست‌ها و ایمیل‌های آزمایشی وارد مخزن نمی‌شوند. فایل‌های لازم رابط و فونت از خود برنامه بارگذاری می‌شوند و به سرویس بیرونی وابسته نیستند.
+
+## ساخت بستهٔ نصب
+
+پس از ساخت رابط و آماده‌سازی وابستگی‌های PHP، بستهٔ کامل را در مسیری بیرون از پوشهٔ عمومی وب بسازید و بررسی کنید.
+
+<div dir="ltr">
 
 ```sh
 php bin/build-release.php /absolute/new-seat-manager-release.zip
 php tests/backend/release-package.php /absolute/new-seat-manager-release.zip
 ```
 
-Only `public_html/` is public. The archive includes no real configuration, installation key or local data. Follow [the installation guide](docs/backend/INSTALL.md) before opening `/install.html` to create the first administrator.
+</div>
 
-For a **publicly distributable** archive, use public mode to verify the bundled Vazirmatn web fonts and their notices:
+بستهٔ خروجی، تنظیمات واقعی، کلید نصب یا داده‌های محیط محلی را همراه ندارد. برای انتشار عمومی، حالت زیر صحت فونت‌های وزیرمتن و فایل‌های مجوز همراهشان را نیز بررسی می‌کند.
+
+<div dir="ltr">
 
 ```sh
 node frontend/build.mjs --public
@@ -77,22 +92,34 @@ php bin/build-release.php --public /absolute/new-seat-manager-public.zip
 php tests/backend/release-package.php --public /absolute/new-seat-manager-public.zip
 ```
 
-Public mode accepts only the pinned Vazirmatn font files and their accompanying license/author notices, and rejects private or unrecognized fonts. Both release modes include this README, third-party notices, installation documentation and a per-file checksum manifest. Every frontend build uses the same bundled Vazirmatn fonts.
+</div>
 
-## Fonts and dependencies
+حالت عمومی فقط نسخهٔ مشخص‌شدهٔ وزیرمتن و فایل‌های مجوز و پدیدآورندگان آن را می‌پذیرد و فونت خصوصی یا ناشناخته را رد می‌کند. هر دو حالت ساخت، این راهنما، توضیحات وابستگی‌ها، راهنمای نصب و فهرست هش فایل‌ها را در بسته قرار می‌دهند. همهٔ خروجی‌ها از فونت وزیرمتن همراه برنامه استفاده می‌کنند.
 
-The public application includes **Vazirmatn v33.003** web fonts (regular, medium and bold), served from its own assets with the SIL Open Font License and author notices. No font installation or external font service is required.
+## فونت و وابستگی‌ها
 
-Old private font files, if present in a development directory, are ignored by the build. Local and hosted versions both use the included Vazirmatn fonts. See [third-party notices](THIRD_PARTY.md).
+برنامه سه وزن معمولی، متوسط و ضخیم فونت **وزیرمتن، نسخهٔ ۳۳٫۰۰۳** را همراه مجوز SIL Open Font License و مشخصات پدیدآورندگان در خود دارد. فونت از فایل‌های خود برنامه بارگذاری می‌شود و به نصب فونت روی دستگاه کاربر یا سرویس فونت بیرونی نیاز ندارد.
 
-## Development
+فایل‌های قدیمی فونت خصوصی، در صورت وجود در محیط توسعه، وارد خروجی ساخت نمی‌شوند. اطلاعات نسخه‌ها و مجوزها در [توضیحات وابستگی‌ها](THIRD_PARTY.md) آمده است.
+
+## توسعه و آزمون
+
+آزمون‌های رفتار رابط را با فرمان زیر اجرا کنید.
+
+<div dir="ltr">
 
 ```sh
 node --test frontend/tests/*.test.mjs
 ```
 
-Backend integration tests use a separate test database; some deliberately recreate its contents. Do not run them against a database whose contents you need to preserve. See [setup](docs/SETUP.md), [identity API](docs/backend/API.md), [permission groups](docs/backend/ACCESS-GROUPS-CONTRACT.md), [operations API](docs/backend/API-OPERATIONS.md), [operational behavior](docs/backend/OPERATIONS.md) and [email setup and delivery](docs/backend/MAIL.md).
+</div>
 
-## License
+آزمون‌های یکپارچهٔ بک‌اند از پایگاه دادهٔ آزمایشی جدا استفاده می‌کنند و بعضی از آن‌ها محتوای آن را بازسازی می‌کنند. این آزمون‌ها را روی پایگاه داده‌ای که می‌خواهید حفظ شود اجرا نکنید.
 
-No project-wide open-source license has been selected. Public repository visibility does not itself grant an additional software license. Third-party components retain their own licenses; see [THIRD_PARTY.md](THIRD_PARTY.md).
+مستندات فنی شامل [راه‌اندازی](docs/SETUP.md)، [رابط هویت و اعلان](docs/backend/API.md)، [گروه‌های دسترسی](docs/backend/ACCESS-GROUPS-CONTRACT.md)، [رابط عملیات](docs/backend/API-OPERATIONS.md)، [رفتار کارهای دوره‌ای](docs/backend/OPERATIONS.md) و [تنظیم و ارسال ایمیل](docs/backend/MAIL.md) هستند.
+
+## مجوز استفاده
+
+هنوز مجوز متن‌باز سراسری برای پروژه انتخاب نشده است. عمومی‌بودن مخزن به‌تنهایی مجوز نرم‌افزاری اضافه‌ای ایجاد نمی‌کند. هر وابستگی، مجوز خودش را دارد؛ جزئیات در [توضیحات وابستگی‌ها](THIRD_PARTY.md) ثبت شده است.
+
+</div>
