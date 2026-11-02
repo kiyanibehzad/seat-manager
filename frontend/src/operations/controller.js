@@ -63,8 +63,8 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   const adminAccount=id=>(data.adminAccounts||[]).find(a=>a.id===Number(id))||data.request?.account||data.operation?.parties.find(p=>p.account.id===Number(id))?.account||[...(data.today||[]),...(data.tomorrow||[])].find(t=>t.account.id===Number(id))?.account;
   const objectId=id=>{const n=Number(id);if(!Number.isSafeInteger(n)||n<1)throw new ApiError('validation_failed','مورد معتبر انتخاب کنید.');return n;};
   function updateTitle(){document.title=pageTitle(content.querySelector('h1')?.textContent||views.pageTitles[route.page]||'پنل');}
-  async function load({preserveUserRow=null}={}){
-    const anchor=preserveUserRow?Array.from(content.querySelectorAll('[data-op-action="expand-user"]')).find(b=>Number(b.dataset.id)===preserveUserRow):null;
+  async function load({anchor=null}={}){
+    const anchorSelector=anchor?`[data-op-action="${CSS.escape(anchor.dataset.opAction)}"][data-id="${CSS.escape(anchor.dataset.id)}"]`:null;
     const anchorTop=anchor?.getBoundingClientRect().top,contentHeight=anchor?content.getBoundingClientRect().height:null;
     content.style.minHeight=contentHeight===null?'':contentHeight+'px';
     mailPanel?.destroy();mailPanel=null;const sequence=++loadSequence;loadAbort?.abort();loadAbort=new AbortController();const signal=loadAbort.signal;picker.close(false);form=null;context=null;data={};reasonDraft=null;notify('');
@@ -103,7 +103,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
         else{const queue=await api.admin.queue(signal);result={requests:queue.requests.map(r=>requestModel(r)),renewals:queue.renewals.map(r=>requestModel(r)),capacity:capacityModel(queue.capacity)};}
       }
       if(destroyed||sequence!==loadSequence)return;data=result;render();
-      if(anchor){content.style.minHeight='';const next=Array.from(content.querySelectorAll('[data-op-action="expand-user"]')).find(b=>Number(b.dataset.id)===preserveUserRow);if(next){window.scrollTo(0,window.scrollY+next.getBoundingClientRect().top-anchorTop);next.focus({preventScroll:true});}}
+      if(anchor){content.style.minHeight='';const next=content.querySelector(anchorSelector);if(next){window.scrollTo(0,window.scrollY+next.getBoundingClientRect().top-anchorTop);next.focus({preventScroll:true});}}
       if(route.renewId&&data.selected){if(data.selected.locked)notify('این حساب در حال رسیدگی است؛ پس از پایان عملیات می‌توانید درخواست تازه ثبت کنید.');else openForm('renew-request',data.selected);}
     }catch(error){if(destroyed||sequence!==loadSequence||error.code==='aborted')return;content.innerHTML=heading(views.pageTitles[route.page]||'')+`<div class="sm-error" role="alert">${esc(error.message||'دریافت اطلاعات ممکن نشد.')}</div>${button('تلاش دوباره','reload')}`;updateTitle();}
     finally{if(sequence===loadSequence)content.style.minHeight='';}
@@ -130,10 +130,51 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     if(route.page==='settings'&&canManageMail(session)){const slot=content.querySelector('[data-mail-panel]');if(slot)mailPanel=mountMailSettings({root:slot,transport});}
     updateTitle();picker.enhance();syncForms();
   }
+  function closeGroupEditor(restoreFocus=false){
+    const trigger=content.querySelector('[aria-controls="op-group-editor"]');
+    content.querySelector('[data-group-editor]')?.remove();
+    if(trigger){
+      trigger.setAttribute('aria-expanded','false');
+      trigger.removeAttribute('aria-controls');
+      if(restoreFocus)trigger.focus();
+    }
+    context=null;
+  }
+  function openGroupEditor(trigger,record=null){
+    requirePermission('access_groups.manage');
+    const assigning=trigger.dataset.opAction==='assign-access-group';
+    if(!assigning&&record?.protected)throw new ApiError('forbidden','این گروه محافظت‌شده قابل ویرایش نیست.',{},403);
+    const wasOpen=trigger.getAttribute('aria-expanded')==='true';
+    closeGroupEditor();
+    if(wasOpen){trigger.focus();return;}
+    const markup=assigning?forms.accessGroupAssignmentForm(record,data.groups):forms.accessGroupForm(record,data.capabilities);
+    const row=trigger.closest('tr');
+    let host;
+    if(row){
+      host=document.createElement('tr');
+      host.className='sm-user-account-detail';
+      const cell=host.insertCell();
+      cell.colSpan=row.cells.length;
+      cell.style.gridColumn='1 / -1';
+      cell.innerHTML=markup;
+      row.after(host);
+    }else{
+      host=document.createElement('div');
+      host.innerHTML=markup;
+      trigger.closest('.sm-section-title').after(host);
+    }
+    host.dataset.groupEditor='';
+    const editor=host.querySelector('form');
+    editor.id='op-group-editor';
+    trigger.setAttribute('aria-controls',editor.id);
+    trigger.setAttribute('aria-expanded','true');
+    context=record;
+    editor.querySelector('select,input:not([type="hidden"])')?.focus({preventScroll:true});
+    editor.scrollIntoView({block:editor.offsetHeight>window.innerHeight?'start':'nearest'});
+  }
   function openForm(kind,record=null){
     requirePermission(formPermission(kind));
-    if(kind==='access-group'&&record?.protected)throw new ApiError('forbidden','این گروه محافظت‌شده قابل ویرایش نیست.',{},403);
-    context=record;form=kind==='credit-request'?creditRequestForm(data.accounts||[],record):kind==='start-credit'?startCreditForm(record):kind==='complete-credit'?completeCreditForm(record):kind==='add-account'?forms.personalAccountForm():kind==='rename-account'?forms.personalAccountForm(record):['seat-request','renew-request'].includes(kind)?forms.personalRequestForm(record,{renewal:kind==='renew-request',reasons:data.reasons||[],otherCode:data.otherCode}):kind==='add-user'||kind==='edit-user'?forms.userForm(record,data.departments,{canManageScores:can('departments.manage')}):kind==='department'?forms.departmentForm(record):kind==='approve-signup'?forms.signupForm(record,data.departments):kind==='start-request'?forms.startRequestForm(record,{sources:data.adminAccounts||[],canConvert:can('capacity.manage'),capacity:data.capacity}):kind==='correct-account'?forms.correctionForm(record):kind==='access-group'?forms.accessGroupForm(record,data.capabilities):kind==='access-group-assignment'?forms.accessGroupAssignmentForm(record,data.groups):kind==='capacity'?forms.capacityForm(data.capacity):kind==='abort-operation'?forms.abortForm(record,{canCapacity:can('capacity.manage')}):['direct','return','reclaim','scheduled_downgrade','paid_conversion'].includes(kind)?forms.directForm(record,{kind,canConvert:can('capacity.manage')}):forms.simpleReasonForm(kind,record?.id,({ 'reject-request':'رد درخواست','revalidate-request':'بازبینی درخواست','reject-signup':'رد ثبت‌نام','defer-operation':'ثبت موعد اثر','cancel-operation':'لغو پیگیری','reject-credit':'رد درخواست اعتبار' })[kind]||'ثبت دلیل',{date:kind==='defer-operation'});render();content.querySelector('.sm-form-panel input:not([type="hidden"]),.sm-form-panel textarea,.sm-form-panel select')?.focus({preventScroll:true});
+    context=record;form=kind==='credit-request'?creditRequestForm(data.accounts||[],record):kind==='start-credit'?startCreditForm(record):kind==='complete-credit'?completeCreditForm(record):kind==='add-account'?forms.personalAccountForm():kind==='rename-account'?forms.personalAccountForm(record):['seat-request','renew-request'].includes(kind)?forms.personalRequestForm(record,{renewal:kind==='renew-request',reasons:data.reasons||[],otherCode:data.otherCode}):kind==='add-user'||kind==='edit-user'?forms.userForm(record,data.departments,{canManageScores:can('departments.manage')}):kind==='department'?forms.departmentForm(record):kind==='approve-signup'?forms.signupForm(record,data.departments):kind==='start-request'?forms.startRequestForm(record,{sources:data.adminAccounts||[],canConvert:can('capacity.manage'),capacity:data.capacity}):kind==='correct-account'?forms.correctionForm(record):kind==='capacity'?forms.capacityForm(data.capacity):kind==='abort-operation'?forms.abortForm(record,{canCapacity:can('capacity.manage')}):['direct','return','reclaim','scheduled_downgrade','paid_conversion'].includes(kind)?forms.directForm(record,{kind,canConvert:can('capacity.manage')}):forms.simpleReasonForm(kind,record?.id,({ 'reject-request':'رد درخواست','revalidate-request':'بازبینی درخواست','reject-signup':'رد ثبت‌نام','defer-operation':'ثبت موعد اثر','cancel-operation':'لغو پیگیری','reject-credit':'رد درخواست اعتبار' })[kind]||'ثبت دلیل',{date:kind==='defer-operation'});render();content.querySelector('.sm-form-panel input:not([type="hidden"]),.sm-form-panel textarea,.sm-form-panel select')?.focus({preventScroll:true});
   }
   function dateBounds(input){const form=input.closest('form'),name=input.name,kind=form?.dataset.opForm,today=iranDays().today,start=parseJalali(form?.elements.start?.value||form?.elements.target_start?.value);if(kind==='summary-filter')return name==='to_day'?{minInclusive:parseJalali(form.elements.from_day?.value)||undefined,maxInclusive:today}:{maxInclusive:parseJalali(form.elements.to_day?.value)||today};if(name==='period_end'&&kind==='complete-credit')return{minInclusive:parseJalali(form.elements.observed_day?.value)||today};if(name==='observed_day')return{maxInclusive:today,maxReason:'روز مشاهده نباید بعد از امروز ایران باشد.'};if(name==='effect_day')return{minInclusive:shiftJalaliDays(today,1)};if(kind==='seat-request')return name==='start'?{minInclusive:today}:{minExclusive:start||today};if(kind==='renew-request'||kind==='start-request'&&name==='approved_end')return{minInclusive:today,minExclusive:context?.end||data.request?.account.end};if(name.endsWith('end')){const prefix=name.replace(/end$/,'start'),value=parseJalali(form?.elements[prefix]?.value);return value?{minExclusive:value}:{};}return{};}
   function syncForms(){for(const f of content.querySelectorAll('[data-op-form]')){
@@ -164,7 +205,8 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       else if(command.route.startsWith('/admin/credit-requests/')&&result.request?.id)route={page:'seats',tab:'credits',creditId:result.request.id,day:route.day};
       else if(command.route.startsWith('/credit-requests')&&result.request?.id)route={page:'requests',tab:'credits',creditId:result.request.id};
       else if(command.route==='/requests'&&result.request?.id)route={page:'requests',requestId:result.request.id};
-      navigate(routeUrl(baseUrl,route));await load();notify('تغییر ثبت شد.');
+      const anchor=f?.closest('[data-group-editor]')?content.querySelector('[aria-controls="op-group-editor"]'):null;
+      navigate(routeUrl(baseUrl,route));await load({anchor});notify('تغییر ثبت شد.');
     }catch(error){if(destroyed||error.code==='aborted')return;if(['network_error','invalid_response'].includes(error.code)){uncertain={command};notify('نتیجهٔ ثبت مشخص نیست. «بررسی دوبارهٔ همان ثبت» را بزنید؛ درخواست تازه‌ای نسازید.',true);notice.insertAdjacentHTML('beforeend',button('بررسی دوبارهٔ همان ثبت','retry-command'));}
       else if(error.status===409){uncertain=null;await load();notify(error.message+' اطلاعات تازه دریافت شد؛ دوباره بررسی کنید.',true);}
       else if(command.route==='/admin/users/bulk-commit'&&Array.isArray(error.fields?.rows)){bulkPreview={...bulkPreview,valid:false,rows:error.fields.rows};render();notify(error.message,true);}else if(!f){await load();notify(error.message||'ثبت ممکن نشد.',true);}else formError(f,error);
@@ -221,16 +263,17 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       else if(action==='operation-detail')routeTo({page:'seats',operationId:objectId(id),day:route.day,tab:'ongoing'});
       else if(action==='personal-account')routeTo({page:'accounts',accountId:objectId(id)});else if(action==='admin-account')routeTo({page:'seats',tab:'accounts',accountId:objectId(id)});
       else if(action==='more-accounts'||action==='more-admin-accounts'||action==='more-operations'||action==='more-history'||action==='more-finance')routeTo({...route,before:objectId(id)});
-      else if(action==='more-request-history')routeTo({...route,before:objectId(id),historyKind:'requests'});else if(action==='signups')routeTo({page:'registrations'});else if(action==='expand-user'){expandedUser=expandedUser===Number(id)?null:Number(id);void load({preserveUserRow:Number(id)});}
+      else if(action==='more-request-history')routeTo({...route,before:objectId(id),historyKind:'requests'});else if(action==='signups')routeTo({page:'registrations'});else if(action==='expand-user'){expandedUser=expandedUser===Number(id)?null:Number(id);void load({anchor:b});}
       else if(action==='bulk-users'){requirePermission('people.manage');bulkRows=[];bulkPreview=null;routeTo({page:'users',bulk:true});}
       else if(action==='bulk-add'){bulkRows=bulkDraftRows(content.querySelector('[data-op-form="bulk-preview"]'));bulkRows.push({});bulkPreview=null;render();}else if(action==='bulk-remove'){bulkRows=bulkDraftRows(content.querySelector('[data-op-form="bulk-preview"]'));bulkRows.splice(Number(id),1);bulkPreview=null;render();}
       else if(action==='bulk-commit'&&bulkPreview?.valid)await send({route:'/admin/users/bulk-commit',body:{batch_id:bulkPreview.batch_id}});
       else if(action==='reason-add'||action==='reason-remove'){requirePermission('settings.manage');reasonDraft=reasonRows();if(action==='reason-add')reasonDraft.push({code:'reason_'+crypto.randomUUID().replaceAll('-',''),label:''});else reasonDraft.splice(Number(id),1);content.querySelector('[data-op-form="reasons"]').outerHTML=views.reasonEditorView(reasonDraft);}
+      else if(action==='close-form'&&b.closest('[data-group-editor]'))closeGroupEditor(true);
       else if(action==='close-form'){form=null;context=null;render();}
       else if(action==='add-account')openForm(action);else if(['rename-account','seat-request','renew-request'].includes(action)){const account=ownAccount(id);if(!account)throw new ApiError('not_found','حساب پیدا نشد.');if(account.locked&&action!=='rename-account')throw new ApiError('account_locked','این حساب در حال رسیدگی است؛ پس از پایان عملیات درخواست تازه ثبت کنید.');openForm(action,account);}
       else if(action==='cancel-request'){const request=data.request||(data.requests||[]).find(r=>r.id===Number(id));if(!request||request.status!=='pending')throw new ApiError('conflict','درخواست دیگر در انتظار بررسی نیست.');await send({route:'/requests/cancel',body:{request_id:request.id}});}
       else if(action==='add-user')openForm(action);else if(action==='edit-user')openForm(action,data.users.find(u=>u.id===Number(id)));else if(action==='add-department')openForm('department');else if(action==='edit-department')openForm('department',data.departments.find(d=>d.id===Number(id)));
-      else if(action==='approve-signup'||action==='reject-signup')openForm(action,data.users.find(u=>u.id===Number(id)));else if(action==='add-access-group')openForm('access-group');else if(action==='edit-access-group'){const group=data.groups?.find(g=>g.id===Number(id));if(!group)throw new ApiError('not_found','گروه پیدا نشد.');openForm('access-group',group);}else if(action==='assign-access-group'){const user=data.users?.find(u=>u.id===Number(id)&&u.approval_status==='approved');if(!user)throw new ApiError('not_found','کاربر تأییدشده پیدا نشد.');openForm('access-group-assignment',user);}else if(action==='capacity')openForm(action);
+      else if(action==='approve-signup'||action==='reject-signup')openForm(action,data.users.find(u=>u.id===Number(id)));else if(action==='add-access-group')openGroupEditor(b);else if(action==='edit-access-group'){const group=data.groups?.find(g=>g.id===Number(id));if(!group)throw new ApiError('not_found','گروه پیدا نشد.');openGroupEditor(b,group);}else if(action==='assign-access-group'){const user=data.users?.find(u=>u.id===Number(id)&&u.approval_status==='approved');if(!user)throw new ApiError('not_found','کاربر تأییدشده پیدا نشد.');openGroupEditor(b,user);}else if(action==='capacity')openForm(action);
       else if(['start-request','reject-request','revalidate-request'].includes(action))openForm(action,data.request);
       else if(['direct-operation','return-account','reclaim-account','schedule-account','convert-account','correct-account'].includes(action)){const a=adminAccount(id);if(!a)throw new ApiError('not_found','اطلاعات تازهٔ حساب را باز کنید.');openForm(({ 'direct-operation':'direct','return-account':'return','reclaim-account':'reclaim','schedule-account':'scheduled_downgrade','convert-account':'paid_conversion','correct-account':'correct-account' })[action],a);}
       else if(action==='defer-operation'||action==='cancel-operation'||action==='abort-operation')openForm(action,data.operation);
