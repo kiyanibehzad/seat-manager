@@ -62,7 +62,8 @@ export function startRequestCommand(request,{mode='reserve',source=null,sourceFi
   return {route:'/admin/requests/start',body,key};
 }
 export function resultCommand(operation,selected,{complete=false,reason,evidence,capacityConfirmed=false,finance=null},key){
-  if(!reason?.trim()||!evidence?.trim())throw new ApiError('validation_failed','دلیل و شرح بررسی نتیجه را وارد کنید.');
+  reason=String(reason||'').trim();evidence=String(evidence||'').trim();
+  if(reason.length>2000||evidence.length>4000)throw new ApiError('validation_failed','یادداشت یا توضیحات بررسی بیش از حد طولانی است.');
   if(!Array.isArray(selected)||!selected.length||selected.some(row=>row.confirmed!==true))throw new ApiError('validation_failed','نتیجهٔ هر حساب انتخاب‌شده باید تأیید شود.');
   if(complete&&(selected.length!==operation.parties.length||operation.parties.some(p=>!selected.some(row=>row.account_id===p.account.id))))throw new ApiError('validation_failed','برای تکمیل، تأیید تازهٔ تمام حساب‌ها لازم است.');
   return {route:'/admin/operations/result',key,body:{operation_id:operation.id,complete,reason:reason.trim(),evidence:evidence.trim(),capacity_confirmed:capacityConfirmed,...finance?{finance}:{},results:selected.map(row=>({account_id:row.account_id,owner_id:row.owner_id,email:row.email,state_version:row.state_version,confirmed:true,seat:seatToApi(row.seat),starts_at:row.seat==='none'?null:row.starts_at!==undefined?row.starts_at:row.start?dayToInstant(row.start):null,ends_at:row.seat==='none'?null:row.ends_at!==undefined?row.ends_at:row.end?dayToInstant(row.end,true):null,observed_at:row.observed_at}))}};

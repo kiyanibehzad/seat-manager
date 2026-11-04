@@ -88,7 +88,7 @@ final class Credits
             $a=$this->d->account(Input::id($data,'account_id'));
             if ((int)$a['owner_id']!==(int)$fresh['id']) { $this->d->missing(); }
             $this->assertAccount(['owner_id'=>$fresh['id'],'account_id'=>$a['id'],'status'=>'pending'],$a);
-            $amount=self::amount($data,'requested_credits'); $reason=self::text($data,'reason_text'); $db=$this->d->app->db;
+            $amount=self::amount($data,'requested_credits'); $reason=Input::note($data,'reason_text'); $db=$this->d->app->db;
             if ($db->one("SELECT id FROM credit_requests WHERE account_id=? AND status IN ('pending','ongoing')",[$a['id']])) { $this->d->conflict('یک درخواست باز اعتبار برای همین حساب وجود دارد.'); }
             $db->run('INSERT INTO credit_requests(owner_id,account_id,requested_credits,reason_text) VALUES(?,?,?,?)',[$fresh['id'],$a['id'],$amount,$reason]);
             $r=$this->row((int)$db->pdo->lastInsertId()); $this->event($r,(int)$fresh['id'],'credit.created',[],$reason);
@@ -131,7 +131,7 @@ final class Credits
             $observed=Domain::date($data['observed_at']??null,'observed_at');
             if ($observed===null||$observed<($before['reviewed_at']??$before['created_at'])||strtotime($observed.' UTC')>time()+60) { Input::invalid('observed_at','زمان بررسی باید پس از شروع رسیدگی باشد و در آینده نباشد.'); }
             $period=Domain::date($data['period_ends_at']??null,'period_ends_at'); if ($period!==null&&$period<=$observed) { Input::invalid('period_ends_at','پایان دوره باید پس از زمان اقدام باشد.'); }
-            $evidence=self::text($data,'evidence');
+            $evidence=Input::note($data,'evidence');
             $this->d->app->db->run("UPDATE credit_requests SET status='completed',limit_before=?,limit_after=?,observed_at=?,period_ends_at=?,evidence=?,completed_by=?,completed_at=UTC_TIMESTAMP() WHERE id=?",[$old,$new,$observed,$period,$evidence,$fresh['id'],$before['id']]);
             $r=$this->row((int)$before['id']); $this->event($r,(int)$fresh['id'],'credit.completed',$before,'ثبت افزایش واقعی سقف مجاز مصرف',$evidence);
             $this->d->app->events->notify((int)$r['owner_id'],'credit-completed:'.$r['id'],'credit.result','سقف اعتبار ماهانهٔ حساب افزایش یافت','سقف ماهانهٔ حساب '.$a['email'].' از '.$old.' به '.$new.' Credits افزایش یافت. این مقدار، سقف مجاز مصرف است و به معنی مصرف‌شدن اعتبار نیست.',$this->d->app->url('view=my-requests&tab=credits&credit='.$r['id']));

@@ -7,11 +7,11 @@ import {routeFromUrl,routeUrl,notificationRoute} from '../src/operations/routes.
 import {dailyView,personalAccountsView,usersView} from '../src/operations/views.js';
 import {createOperationsApi} from '../src/operations/api.js';
 
-test('credit payload needs an eligible owned account, positive whole amount and meaningful reason',()=>{
+test('credit payload needs an eligible owned account, positive whole amount, with optional notes',()=>{
   const a=accountModel(fixtures().accounts[0],{personalOwner:1});
   assert.deepEqual(createCreditCommand(a,{requested_credits:'500',reason_text:'  تکمیل کار  ',score:99,seat:'premium'}).body,{account_id:101,requested_credits:500,reason_text:'تکمیل کار'});
   for(const value of ['','1.5','-1',0,100000001,Infinity,'۱۰۰'])assert.throws(()=>createCreditCommand(a,{requested_credits:value,reason_text:'نیاز'}));
-  assert.throws(()=>createCreditCommand(a,{requested_credits:100,reason_text:'   '}));
+  assert.equal(createCreditCommand(a,{requested_credits:100,reason_text:'   '}).body.reason_text,'');
   assert.throws(()=>createCreditCommand({...a,seat:'none'},{requested_credits:100,reason_text:'نیاز'}));
   assert.throws(()=>createCreditCommand({...a,locked:true},{requested_credits:100,reason_text:'نیاز'}));
   assert.throws(()=>createCreditCommand({...a,needs_review:true},{requested_credits:100,reason_text:'نیاز'}));
@@ -21,7 +21,8 @@ test('credit completion requires actual result, explicit confirmation and exact 
   assert.equal(start.route,'/admin/credit-requests/start');assert.equal(start.body.approved_credits,300);
   const active={...r,status:'ongoing',approved_credits:300},v={limit_before:1000,limit_after:1300,confirmed:true,evidence:'سقف همین حساب بررسی شد.',observed_day:'1405/08/02',observed_time:'12:00',period_end:'1405/09/01'};
   const command=completeCreditCommand(active,v);assert.equal(command.body.limit_after,1300);assert.equal(command.body.confirmed,true);assert(command.body.period_ends_at);assert(!('consumed_credits'in command.body));assert(!('purchase'in command.body));
-  for(const next of [{...v,limit_after:1200},{...v,confirmed:false},{...v,evidence:''},{...v,evidence:'a'.repeat(2001)}])assert.throws(()=>completeCreditCommand(active,next));
+  for(const next of [{...v,limit_after:1200},{...v,confirmed:false},{...v,evidence:'a'.repeat(2001)}])assert.throws(()=>completeCreditCommand(active,next));
+  assert.equal(completeCreditCommand(active,{...v,evidence:''}).body.evidence,'');
   assert.throws(()=>completeCreditCommand(r,v));
 });
 test('personal credit models enforce owner boundary and strip manager-only evidence',()=>{
@@ -33,7 +34,7 @@ test('personal credit models enforce owner boundary and strip manager-only evide
 });
 test('credit forms retain real calendar controls and never imply purchase or auto reset',()=>{
   const f=fixtures(),r={...creditRequestModel(creditFixtures().request),status:'ongoing',approved_credits:300};
-  const form=creditRequestForm(f.accounts.map(a=>accountModel(a)).filter(a=>a.owner_id===1));assert(form.includes('name="requested_credits"'));assert(form.includes('name="reason_text" required'));assert(!form.includes('value="102"'));
+  const form=creditRequestForm(f.accounts.map(a=>accountModel(a)).filter(a=>a.owner_id===1));assert(form.includes('name="requested_credits"'));assert(!form.includes('name="reason_text" required'));assert(!form.includes('value="102"'));
   const result=completeCreditForm(r);assert(result.includes('name="observed_day"'));assert(result.includes('name="period_end"'));assert.equal((result.match(/data-jalali readonly/g)||[]).length,2);assert(result.includes('data-requires-confirmation disabled'));assert(result.includes('خودکار تغییر نمی‌کند'));
   assert.match(result,/name="observed_time" value="\d\d:\d\d:\d\d"/);assert(result.includes('maxlength="2000"'));
 });

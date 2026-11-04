@@ -38,7 +38,7 @@ final class Engine
             if ($service->blockers($r,$account)) { $this->d->conflict('درخواست یا حساب نیاز به بازبینی دارد.'); }
             $override=isset($data['override_reason'])&&$data['override_reason']!==''?Input::text($data,'override_reason',2000):null;
             (new Queue($this->d))->assertOrder($r,$override);
-            $reason=Input::text($data,'reason',2000); $mode=$data['mode']??'reserve'; if (!in_array($mode,['reserve','transfer','convert'],true)) { Input::invalid('mode'); }
+            $reason=Input::note($data,'reason',2000); $mode=$data['mode']??'reserve'; if (!in_array($mode,['reserve','transfer','convert'],true)) { Input::invalid('mode'); }
             $end=$r['requested_ends_at'];
             if (array_key_exists('approved_ends_at',$data)) {
                 if ($r['kind']!=='renewal') { Input::invalid('approved_ends_at'); }
@@ -83,7 +83,7 @@ final class Engine
                 if ($a['seat']!=='premium'||$state['seat']!=='standard') { Input::invalid('target'); }
                 $effect=Domain::date($data['effect_at']??null,'effect_at'); if ($effect===null||strtotime($effect.' UTC')<=time()) { Input::invalid('effect_at'); } $strategy='deferred';
             } elseif (isset($data['effect_at'])) { Input::invalid('effect_at'); }
-            return ['operation'=>$this->begin($fresh,$kind,[(int)$a['id']=>$this->target($a,$state)],Input::text($data,'reason',2000),null,$strategy,null,$effect)];
+            return ['operation'=>$this->begin($fresh,$kind,[(int)$a['id']=>$this->target($a,$state)],Input::note($data,'reason',2000),null,$strategy,null,$effect)];
         });
     }
     public function view(int $id): array
@@ -103,7 +103,7 @@ final class Engine
         if (!$rollback&&array_key_exists('capacity_reversed',$data)) { Input::invalid('capacity_reversed'); }
         return $this->d->tx($actor,'seats.manage',$rollback?'operation.abort':'operation.result',$data,function ($fresh) use ($data,$rollback) {
             $db=$this->d->app->db; $op=$this->row(Input::id($data,'operation_id')); if ($op['status']!=='ongoing') { $this->d->conflict('عملیات پایان یافته است.'); }
-            $complete=Input::boolean($data,'complete'); $reason=Input::text($data,'reason',2000); $evidence=Input::text($data,'evidence',4000);
+            $complete=Input::boolean($data,'complete'); $reason=Input::note($data,'reason',2000); $evidence=Input::note($data,'evidence',4000);
             $results=$data['results']??null; if (!is_array($results)||!array_is_list($results)||!count($results)||count($results)>2) { Input::invalid('results'); }
             $items=[]; foreach ($db->all('SELECT * FROM operation_accounts WHERE operation_id=? ORDER BY account_id',[$op['id']]) as $item) { $items[(int)$item['account_id']]=$item; }
             if ($complete&&count($results)!==count($items)) { Input::invalid('results','برای تکمیل، تأیید تازهٔ تمام حساب‌ها لازم است.'); }
@@ -181,7 +181,7 @@ final class Engine
             if ($this->d->app->db->one('SELECT account_id FROM operation_accounts WHERE operation_id=? AND result_recorded=1',[$op['id']])) { $this->d->conflict('عملیات دارای واقعیت ثبت‌شده قابل تبدیل به زمان‌بندی نیست.'); }
             $effect=Domain::date($data['effect_at']??null,'effect_at'); if ($effect===null||strtotime($effect.' UTC')<=time()) { Input::invalid('effect_at'); }
             $this->d->app->db->run("UPDATE seat_operations SET effect_at=?,phase='scheduled' WHERE id=?",[$effect,$op['id']]);
-            foreach ($this->d->app->db->all('SELECT account_id FROM operation_accounts WHERE operation_id=?',[$op['id']]) as $item) { $a=$this->d->account((int)$item['account_id']); $s=$this->d->snapshot($a); $this->d->history($a,(int)$fresh['id'],'operation.deferred',$s,$s,Input::text($data,'reason',2000),'موعد اثر: '.Domain::iso($effect),null,(int)$op['id']); }
+            foreach ($this->d->app->db->all('SELECT account_id FROM operation_accounts WHERE operation_id=?',[$op['id']]) as $item) { $a=$this->d->account((int)$item['account_id']); $s=$this->d->snapshot($a); $this->d->history($a,(int)$fresh['id'],'operation.deferred',$s,$s,Input::note($data,'reason',2000),'موعد اثر: '.Domain::iso($effect),null,(int)$op['id']); }
             return ['operation'=>$this->view((int)$op['id'])];
         });
     }
@@ -191,7 +191,7 @@ final class Engine
         return $this->d->tx($actor,'seats.manage','operation.cancel',$data,function ($fresh) use ($data) {
             $op=$this->row(Input::id($data,'operation_id')); if ($op['status']!=='ongoing'||$op['capacity_applied']) { $this->d->conflict(); }
             if ($this->d->app->db->one('SELECT account_id FROM operation_accounts WHERE operation_id=? AND result_recorded=1',[$op['id']])) { $this->d->conflict('عملیات دارای نتیجهٔ واقعی را نمی‌توان بی‌ردپا لغو کرد.'); }
-            $reason=Input::text($data,'reason',2000);
+            $reason=Input::note($data,'reason',2000);
             $this->d->app->db->run("UPDATE seat_operations SET status='cancelled',phase='cancelled',outcome='cancelled_before_result',held_standard=0,held_premium=0,completed_by=?,completed_at=UTC_TIMESTAMP() WHERE id=?",[$fresh['id'],$op['id']]);
             $this->d->app->db->run('DELETE FROM account_operation_locks WHERE operation_id=?',[$op['id']]);
             if ($op['request_id']!==null) { $this->d->app->db->run("UPDATE seat_requests SET status='pending',approved_starts_at=NULL,approved_ends_at=NULL WHERE id=?",[$op['request_id']]); }
@@ -205,7 +205,7 @@ final class Engine
         return $this->d->tx($actor,'seats.manage','operation.correction',$data,function ($fresh) use ($data) {
             $a=$this->d->account(Input::id($data,'account_id')); $this->d->version($a,$data); $this->d->availableAccount($a,true);
             if (!Input::boolean($data,'confirmed')||!isset($data['state'])||!is_array($data['state'])) { Input::invalid('confirmed'); }
-            Input::only($data['state'],['seat','starts_at','ends_at','return_seat']); $state=Domain::state($data['state']); $reason=Input::text($data,'reason',2000); $evidence=Input::text($data,'evidence',4000);
+            Input::only($data['state'],['seat','starts_at','ends_at','return_seat']); $state=Domain::state($data['state']); $reason=Input::note($data,'reason',2000); $evidence=Input::note($data,'evidence',4000);
             $observed=Domain::date($data['observed_at']??null,'observed_at'); if ($observed===null||strtotime($observed.' UTC')>time()+300) { Input::invalid('observed_at'); }
             $db=$this->d->app->db; $db->run("INSERT INTO seat_operations(kind,status,phase,outcome,reason,started_by,completed_by,completed_at) VALUES('correction','completed','completed','corrected',?,?,?,UTC_TIMESTAMP())",[$reason,$fresh['id'],$fresh['id']]); $id=(int)$db->pdo->lastInsertId();
             $state['return_seat']??=$state['seat']===($a['seat']??'none')?($a['return_seat']??'none'):($state['ends_at']===null?'none':($a['seat']??'none'));

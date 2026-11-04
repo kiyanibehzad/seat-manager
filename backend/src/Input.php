@@ -3,6 +3,15 @@ declare(strict_types=1);
 namespace AccManager;
 final class Input
 {
+    /** Optional free-form notes; structured action data remains authoritative. */
+    public static function note(array $data, string $key, int $max = 2000): string
+    {
+        $value = $data[$key] ?? '';
+        if (!is_string($value) || !mb_check_encoding($value, 'UTF-8')) { self::invalid($key); }
+        $value = trim(str_replace(["\r\n", "\r"], "\n", $value));
+        if (mb_strlen($value) > $max || preg_match('/[\x00-\x08\x0B\x0C\x0E-\x1F\x7F]/u', $value)) { self::invalid($key); }
+        return $value;
+    }
     public static function text(array $data, string $key, int $max = 100): string
     {
         $value = $data[$key] ?? null;

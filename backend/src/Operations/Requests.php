@@ -107,7 +107,7 @@ final class Requests
             if ($r['kind']==='renewal'&&($a['seat']!=='premium'||$a['ends_at']===null||$r['requested_ends_at']<=$a['ends_at'])) { $this->d->conflict('درخواست تمدید با تخصیص فعلی سازگار نیست؛ درخواست تازه لازم است.'); }
             if ($r['kind']==='seat'&&$r['requested_ends_at']!==null&&Domain::iranDay($r['requested_ends_at'])<Domain::iranDay()) { $this->d->conflict('بازهٔ درخواستی پایان یافته است؛ درخواست تازه لازم است.'); }
             $this->d->app->db->run('UPDATE seat_requests SET expected_state_version=?,assignment_id=?,assignment_version=? WHERE id=?',[$a['state_version'],$r['kind']==='renewal'?$a['assignment_id']:null,$r['kind']==='renewal'?$a['assignment_version']:null,$r['id']]);
-            $s=$this->d->snapshot($a); $this->d->history($a,(int)$fresh['id'],'request.revalidated',$s,$s,Input::text($data,'reason',2000),'',null,null,(int)$r['id']);
+            $s=$this->d->snapshot($a); $this->d->history($a,(int)$fresh['id'],'request.revalidated',$s,$s,Input::note($data,'reason',2000),'',null,null,(int)$r['id']);
             return ['request'=>$this->publicRequest($this->row((int)$r['id']),true)];
         });
     }

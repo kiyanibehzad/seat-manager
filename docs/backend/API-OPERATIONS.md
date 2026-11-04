@@ -1,5 +1,7 @@
 # قرارداد عملیات مرحلهٔ دوم — نسخهٔ ۱
 
+توضیحات تکمیلی در شروع رسیدگی، اقدام مستقیم، ثبت نتیجه، اصلاح وضعیت، ثبت ظرفیت، بازبینی، لغو پیگیری و ثبت موعد اختیاری‌اند؛ `reason` و `evidence` می‌توانند ارسال نشوند یا خالی باشند. سقف متن به‌ترتیب ۲۰۰۰ و ۴۰۰۰ نویسه است. در درخواست و تکمیل کردیت، `reason_text` و `evidence` نیز اختیاری و حداکثر ۲۰۰۰ نویسه‌اند. هیچ متن تأیید ساختگی جای خالی ذخیره نمی‌شود؛ عامل، زمان، اقدام و مقادیر قبل و بعد مستقل ثبت می‌شوند. دلیل تمدید، رد درخواست/ثبت‌نام و استثنای خارج از نوبت همچنان لازم است؛ تأیید مشاهدهٔ واقعی، مقدارها و تاریخ‌های لازم نیز الزامی‌اند.
+
 مبنای session/CSRF، JSON envelope، same-origin، `api/index.php?route=…` و خطاها همان API.md است؛ مسیرهای مرحلهٔ اول تغییر نمی‌کنند. همهٔ POST/PATCHها CSRF می‌خواهند. id عدد و bool واقعی است؛ تاریخ nullable با ISO-8601 و UTC برمی‌گردد. ساعت/روز جاری در Asia/Tehran سنجیده می‌شود. ورودی زمانی باید offset/Z صریح داشته باشد؛ رابط شمسی آن را به instant تبدیل می‌کند. برای انتخاب روز کامل: شروع 00:00:00 و پایان 23:59:59 ایران. زمان ثبت، زمان مشاهدهٔ نتیجه، بازهٔ درخواستی و بازهٔ مصوب فیلدهای جدا هستند.
 
 در همهٔ mutationهای عملیات `idempotency_key` (۸ تا ۱۰۰ نویسه ASCII، ترجیحاً UUID تازه) بفرستید. تکرار همان کلید/actor/body همان نتیجه را برمی‌گرداند؛ همان کلید با محتوای متفاوت 409 است. `state_version` و `expected_revision` از پاسخ آخر گرفته شوند؛ 409 یعنی دوباره بخوانید. تأیید ظاهری جای کنترل سرور نیست.
@@ -30,17 +32,17 @@
 | `/admin/queue` | GET | `{requests,renewals,capacity}`؛ صف زنده با امتیاز بخش+سرپرست+ویژه، تمدیدها جدا بر نزدیک‌ترین پایان |
 | `/admin/dashboard` | GET | `{today,tomorrow,counts,iran_today}`؛ فقط موعد/واقعیت ثبت‌شده، بدون تاریخ جعلی ETA |
 | `/admin/requests/detail` | GET | `id` → درخواست و حساب/سوابق مرتبطِ عملیاتی |
-| `/admin/requests/revalidate` | POST | `request_id,state_version,reason,idempotency_key`؛ بازبینی صریح درخواست pending بعد از تغییر حساب، بدون بازنویسی درخواست اصلی |
+| `/admin/requests/revalidate` | POST | `request_id,state_version,reason?,idempotency_key`؛ بازبینی صریح درخواست pending بعد از تغییر حساب، بدون بازنویسی درخواست اصلی |
 | `/admin/requests/reject` | POST | `request_id,reason,idempotency_key`؛ pending فقط، نتیجه/اعلان واقعی |
-| `/admin/requests/start` | POST | `request_id,state_version,mode:reserve|transfer|convert,source_account_id?,source_state_version?,source_final_seat?,approved_ends_at?,override_reason?,reason,idempotency_key` → `{operation}` |
-| `/admin/operations/start` | POST | اقدام مستقیم: `kind:direct|return|reclaim|scheduled_downgrade|paid_conversion,account_id,state_version,target:{seat,starts_at?,ends_at?},effect_at?,reason,idempotency_key` → `{operation}` |
+| `/admin/requests/start` | POST | `request_id,state_version,mode:reserve|transfer|convert,source_account_id?,source_state_version?,source_final_seat?,approved_ends_at?,override_reason?,reason?,idempotency_key` → `{operation}` |
+| `/admin/operations/start` | POST | اقدام مستقیم: `kind:direct|return|reclaim|scheduled_downgrade|paid_conversion,account_id,state_version,target:{seat,starts_at?,ends_at?},effect_at?,reason?,idempotency_key` → `{operation}` |
 | `/admin/operations` | GET | `status?,before_id?,limit?` → `{items,next_before_id}`؛ فهرست کامل ongoing و نتایج تکمیل/لغو |
 | `/admin/operations/detail` | GET | `id` → `{operation,history}`، هویت دقیق هر حساب، قبل/هدف/واقعیت، hold و مانع |
 | `/admin/operations/invitation` | POST | `operation_id,waiting:bool,idempotency_key`؛ فقط برچسب همان ongoing، تکمیل نیست |
-| `/admin/operations/defer` | POST | `operation_id,effect_at,reason,idempotency_key`؛ ثبت زمان اثر آینده، بدون تغییر سیت یا تعداد خرید |
+| `/admin/operations/defer` | POST | `operation_id,effect_at,reason?,idempotency_key`؛ ثبت زمان اثر آینده، بدون تغییر سیت یا تعداد خرید |
 | `/admin/operations/result` | POST | ساختار زیر؛ واقعیت جزئی یا تکمیل نهایی |
-| `/admin/operations/cancel` | POST | `operation_id,reason,idempotency_key`؛ فقط وقتی هیچ واقعیتی ثبت نشده؛ hold/lock آزاد و درخواست به pending برمی‌گردد |
-| `/admin/corrections` | POST | `account_id,state_version,state:{seat,starts_at?,ends_at?,return_seat?},observed_at,reason,evidence,confirmed:true,idempotency_key`؛ اصلاح واقعی append-only؛ برای حساب قفل‌شده از result همان operation استفاده شود |
+| `/admin/operations/cancel` | POST | `operation_id,reason?,idempotency_key`؛ فقط وقتی هیچ واقعیتی ثبت نشده؛ hold/lock آزاد و درخواست به pending برمی‌گردد |
+| `/admin/corrections` | POST | `account_id,state_version,state:{seat,starts_at?,ends_at?,return_seat?},observed_at,reason?,evidence?,confirmed:true,idempotency_key`؛ اصلاح واقعی append-only؛ برای حساب قفل‌شده از result همان operation استفاده شود |
 | `/admin/history` | GET | `account_id?,operation_id?,before_id?,limit?` → تاریخچهٔ کاملِ قبل/بعد/عامل/ثبت/مشاهده/دلیل؛ حذف و ویرایش سابقه API ندارد |
 | `/admin/capacity` | GET | purchased/assigned/held/free برای هر نوع، revision و reconciliation_required |
 
@@ -61,7 +63,7 @@
 
 | route | روش | ورودی / خروجی |
 |---|---|---|
-| `/admin/capacity` | POST | `standard,premium,expected_revision,confirmed:true,reason,evidence,finance?,idempotency_key`؛ تعدادهای واقعی ثبت‌شده، نه مبلغ کیف پول |
+| `/admin/capacity` | POST | `standard,premium,expected_revision,confirmed:true,reason?,evidence?,finance?,idempotency_key`؛ تعدادهای واقعی ثبت‌شده، نه مبلغ کیف پول |
 | `/admin/finance` | GET | ledger واقعی ثبت ظرفیت/تبدیل؛ مبلغ نامعلوم null است |
 | `/admin/reasons` | POST | `items:[{code,label}],idempotency_key`؛ کد other رزروشده؛ نام‌های نهایی را مسئول وارد می‌کند |
 
@@ -89,7 +91,7 @@ finance اختیاری: `{amount:"…",currency:"…",reference:"…"}` صرفا
 | admin/capacity POST | `expected_revision` ظرفیت |
 | ایجاد/alias حساب، ایجاد/لغو/رد درخواست، invitation/defer/cancel، reasons، bulk | نسخهٔ حساب از کلاینت لازم نیست؛ وضعیت و مجوز تازه زیر قفل DB کنترل می‌شوند؛ batch صاحب/انقضای خودش را دارد |
 
-`POST /admin/operations/abort`: `operation_id,reason,evidence,results:[تمام حساب‌ها با همان ساختار result],capacity_reversed?:bool,finance?,idempotency_key`. هر نتیجه باید بازگشت واقعی به seat/بازهٔ **before اصلی** همان حساب را تصدیق کند. هیچ تغییری در OpenAI خودکار انجام نمی‌شود. واقعیت بازگشت append-only ثبت، lock/hold آزاد و operation با `status:cancelled,outcome:rolled_back` خاتمه می‌یابد؛ ادعای انجام هدف اولیه نمی‌شود. درخواست مربوط pending و، اگر نسخه عوض شده، نیازمند revalidate می‌ماند. cancel ساده فقط قبل از هر واقعیت ثبت‌شده است؛ outcome آن cancelled_before_result است. نتیجهٔ موفق outcome=target_completed و اصلاح مستقل outcome=corrected دارد.
+`POST /admin/operations/abort`: `operation_id,reason?,evidence?,results:[تمام حساب‌ها با همان ساختار result],capacity_reversed?:bool,finance?,idempotency_key`. هر نتیجه باید بازگشت واقعی به seat/بازهٔ **before اصلی** همان حساب را تصدیق کند. هیچ تغییری در OpenAI خودکار انجام نمی‌شود. واقعیت بازگشت append-only ثبت، lock/hold آزاد و operation با `status:cancelled,outcome:rolled_back` خاتمه می‌یابد؛ ادعای انجام هدف اولیه نمی‌شود. درخواست مربوط pending و، اگر نسخه عوض شده، نیازمند revalidate می‌ماند. cancel ساده فقط قبل از هر واقعیت ثبت‌شده است؛ outcome آن cancelled_before_result است. نتیجهٔ موفق outcome=target_completed و اصلاح مستقل outcome=corrected دارد.
 
 برای rollback تبدیل ظرفیتِ قبلاً ثبت‌شده، فقط اگر تعدادهای خرید واقعاً هم برگشته‌اند admin با capacity_reversed=true دلتا را معکوس می‌کند؛ بازگشت خودکار خرید وجود ندارد. اگر صرفاً حساب از Standard آزاد استفاده کرده باشد، این flag false می‌ماند.
 
@@ -123,13 +125,13 @@ Timestampهای سوابق: `history.items[].recorded_at` زمان ثبت برن
 | route | روش / مجوز | ورودی / خروجی |
 |---|---|---|
 | `/credit-requests` | GET / `personal.request` | `status?,account_id?,owner_id?,before_id?` → `{items:[credit_request],next_before_id}` فقط متعلق به نشست؛ حداکثر ۵۰۰ ردیف در صفحه |
-| `/credit-requests` | POST / `personal.request` | `account_id,requested_credits,reason_text,idempotency_key` → `{request}` |
+| `/credit-requests` | POST / `personal.request` | `account_id,requested_credits,reason_text?,idempotency_key` → `{request}` |
 | `/credit-requests/detail` | GET / `personal.request` | `id` → `{request,history}` فقط صاحب درخواست |
 | `/credit-requests/cancel` | POST / `personal.request` | `request_id,idempotency_key`؛ فقط pending متعلق به صاحب درخواست |
 | `/admin/credit-requests` | GET / `seats.manage` | `status?,owner_id?,account_id?,before_id?,limit?` → `{items,next_before_id}`؛ limit پیش‌فرض ۳۰، حداکثر ۱۰۰ |
 | `/admin/credit-requests/detail` | GET / `seats.manage` | `id` → `{request,history}` با اطلاعات مدیریتی |
 | `/admin/credit-requests/start` | POST / `seats.manage` | `request_id,approved_credits,reason?,idempotency_key`؛ pending → ongoing؛ مقدار تأییدشده می‌تواند با مقدار درخواستی متفاوت باشد |
-| `/admin/credit-requests/complete` | POST / `seats.manage` | `request_id,limit_before,limit_after,observed_at,confirmed:true,evidence,period_ends_at?,idempotency_key`؛ ongoing → completed فقط پس از بررسی اقدام واقعی |
+| `/admin/credit-requests/complete` | POST / `seats.manage` | `request_id,limit_before,limit_after,observed_at,confirmed:true,evidence?,period_ends_at?,idempotency_key`؛ ongoing → completed فقط پس از بررسی اقدام واقعی |
 | `/admin/credit-requests/reject` | POST / `seats.manage` | `request_id,reason,idempotency_key`؛ pending یا ongoing → rejected، بدون فرض برگشت تغییر در OpenAI |
 | `/summary` | GET / `personal.read` | `from?,to?` → خلاصهٔ همان فرد؛ owner_id اختیاری فقط اگر برابر نشست باشد |
 | `/admin/people/summary` | GET / `seats.manage` | `owner_id,from?,to?` → خلاصهٔ فرد مشخص |
@@ -138,7 +140,7 @@ Timestampهای سوابق: `history.items[].recorded_at` زمان ثبت برن
 
 برای ایجاد، شروع و تکمیل، صاحب حساب باید فعال، تأییدشده و دارای ایمیل تأییدشده باشد؛ مالکیت روشن و سیت فعلی Standard یا Premium لازم است. حساب در عملیات سیت دیگری قفل نباشد. برای هر حساب فقط یک درخواست pending/ongoing مجاز است؛ محدودیت یکتای DB علاوه بر قفل تراکنش از ایجاد هم‌زمان تکراری جلوگیری می‌کند. وضعیت‌ها: `pending,ongoing,completed,rejected,cancelled`. لغو برای صاحب درخواست فقط تا شروع رسیدگی مجاز است. رد/توقف پروندهٔ باز دلیل الزامی دارد.
 
-شروع، نسخهٔ وضعیت حساب را ثبت می‌کند؛ تکمیل پس از تغییر آن نسخه، تغییر مالک، غیرفعال‌شدن، از دست‌رفتن سیت یا شروع عملیات سیت هم‌زمان، 409 می‌دهد. در این حالت ابتدا واقعیت بررسی شود؛ بستن پرونده با دلیل، تغییری را در OpenAI پس نمی‌گیرد. `limit_after−limit_before` باید دقیقاً برابر approved_credits باشد. `observed_at` زمان بررسی نتیجه، پس از شروع رسیدگی و حداکثر با ۶۰ ثانیه ارفاق نسبت به ساعت سرور است؛ بدون آن، evidence و confirmed نتیجه ثبت نمی‌شود. `period_ends_at` اختیاری و فقط سابقه است؛ باید بعد از زمان مشاهده باشد و موعد تقویمی، چرخهٔ صورتحساب، یادآوری یا بازنشانی سقف از آن استنتاج نمی‌شود.
+شروع، نسخهٔ وضعیت حساب را ثبت می‌کند؛ تکمیل پس از تغییر آن نسخه، تغییر مالک، غیرفعال‌شدن، از دست‌رفتن سیت یا شروع عملیات سیت هم‌زمان، 409 می‌دهد. در این حالت ابتدا واقعیت بررسی شود؛ بستن پرونده با دلیل، تغییری را در OpenAI پس نمی‌گیرد. `limit_after−limit_before` باید دقیقاً برابر approved_credits باشد. `observed_at` زمان بررسی نتیجه، پس از شروع رسیدگی و حداکثر با ۶۰ ثانیه ارفاق نسبت به ساعت سرور است؛ بدون آن و confirmed نتیجه ثبت نمی‌شود. `period_ends_at` اختیاری و فقط سابقه است؛ باید بعد از زمان مشاهده باشد و موعد تقویمی، چرخهٔ صورتحساب، یادآوری یا بازنشانی سقف از آن استنتاج نمی‌شود.
 
 `credit_request`: `id,kind:"credit",unit:"credits",owner_id,account,requested_credits,approved_credits?,status,reason_text,rejection_reason?,limit_before?,limit_after?,score,blockers,created_at,reviewed_at?,completed_at?,observed_at?,period_ends_at?`. مقدار null نشان‌دهندهٔ ثبت‌نشدن است و صفر جای آن استفاده نمی‌شود. blockerها `inactive_owner,ownership_review,unpaid_account,account_locked,stale_account` هستند. نسخه و همهٔ مجوزها در سرور زیر قفل تازه بررسی می‌شوند؛ نسخهٔ کلاینت برای این مسیرها لازم نیست.
 

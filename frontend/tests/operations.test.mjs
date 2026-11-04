@@ -8,7 +8,7 @@ import {datePickerCheck,jalaliMonthInfo,parseJalali,shiftJalaliDays,createDateSe
 import {notificationRoute,routeFromUrl,routeUrl} from '../src/operations/routes.js';
 import * as view from '../src/operations/views.js';
 import {historyMarkup} from '../src/operations/ui.js';
-import {resultForm,abortForm,startRequestForm} from '../src/operations/forms.js';
+import {resultForm,abortForm,startRequestForm,capacityForm,correctionForm,directForm,simpleReasonForm,personalRequestForm} from '../src/operations/forms.js';
 import {parsePastedUsers} from '../src/operations/bulk.js';
 
 test('Iran whole-day boundaries, seconds and round-trip of an existing target instant',()=>{
@@ -45,6 +45,7 @@ test('transfer source and embedded account loaders exhaust pagination beyond 100
 });
 test('partial and complete result commands keep exact identities, versions, dates and confirmation',()=>{
   const op=operationModel(fixtures().operation),rows=op.parties.map(p=>({account_id:p.account.id,owner_id:p.account.owner_id,email:p.account.email,state_version:p.account.state_version,seat:p.target.seat,starts_at:p.target.starts_at,ends_at:p.target.ends_at,confirmed:true,observed_at:'2026-10-24T08:00:00Z'}));
+  assert.equal(resultCommand(op,rows,{complete:true}).body.evidence,'');
   const partial=resultCommand(op,rows.slice(0,1),{complete:false,reason:'نتیجه جزئی',evidence:'بررسی شد'});assert.equal(partial.body.complete,false);assert.equal(partial.body.results.length,1);assert.equal(partial.body.results[0].owner_id,1);
   assert.throws(()=>resultCommand(op,rows.slice(0,1),{complete:true,reason:'نتیجه',evidence:'بررسی شد'}));assert.throws(()=>resultCommand(op,[{...rows[0],confirmed:false}],{reason:'نتیجه',evidence:'شرح'}));
   const complete=resultCommand(op,rows,{complete:true,reason:'نتیجه',evidence:'شرح'});assert.equal(complete.body.results.length,2);assert.equal(complete.body.results[0].starts_at,op.parties[0].target.starts_at);assert.equal(complete.body.capacity_confirmed,false);
@@ -113,4 +114,13 @@ test('staging builder stays separate and the runtime points at a versioned built
   const html=await readFile(new URL('../../public_html/index.html',import.meta.url),'utf8');assert.match(html,/src="\.\/assets\/(?:operations\/)?app\.js\?v=[a-f0-9]+"/);
   const script=await readFile(new URL('../build-staging.mjs',import.meta.url),'utf8');assert(script.includes("build/staging"));assert(!script.includes("writeFile(path.join(frontend,'../public_html"));
   const picker=await readFile(new URL('../src/operations/datepicker.js',import.meta.url),'utf8');assert(picker.includes('return valid;'));assert(picker.includes('data-calendar-clear'));const controller=await readFile(new URL('../src/operations/controller.js',import.meta.url),'utf8');assert(controller.includes('if(!picker.validate(f,{showMissing:true}))'));
+});
+
+test('routine operation notes are optional while renewal and rejection reasons remain required',()=>{
+  const account=accountModel(fixtures().accounts[0]);
+  const forms=[capacityForm({rows:[{type:'Standard',purchased:1}]}),correctionForm(account),directForm(account),simpleReasonForm('cancel-operation',1,'Cancel'),simpleReasonForm('revalidate-request',1,'Review')];
+  for(const html of forms){
+    for(const tag of html.match(/<textarea[^>]*>/g)||[])assert(!/\srequired(?:\s|>)/.test(tag));
+  }
+  for(const html of [personalRequestForm({...account,end:'1405/08/10'},{renewal:true}),simpleReasonForm('reject-request',1,'Reject')])assert.match(html,/<textarea[^>]*\srequired(?:\s|>)/);
 });

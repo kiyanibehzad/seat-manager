@@ -47,9 +47,9 @@ try {
  $db->run('UPDATE mail_settings SET settings_encrypted=?,revision=7 WHERE id=1',[$oldApp->crypto->encrypt($settings)]);
  $pre=readOp($u1,'/credit-requests',[],503); readOp($u1,'/summary',[],503); readOp($operator,'/admin/credit-requests',[],503);
  readOp($operator,'/admin/dashboard'); readOp($u1,'/accounts'); opCheck(!(new Credits($domain))->ready(),'credit005 readiness fails closed');
- $oldTables=array_map(fn($r)=>array_values($r)[0],$db->all("SHOW TABLES")); $oldTables=array_values(array_diff($oldTables,['schema_migrations']));
+ $oldTables=array_map(fn($r)=>array_values($r)[0],$db->all("SHOW TABLES")); $oldTables=array_values(array_diff($oldTables,['schema_migrations','access_capability_codes']));
  $beforeUpgrade=creditFingerprint($app,$oldTables); $migrationBefore=$db->all('SELECT version,checksum,applied_at FROM schema_migrations ORDER BY version');
- opCheck((new Migrator($app))->run()===['005_credit_requests.sql'],'only additive005 runs on old004');
+ opCheck((new Migrator($app))->run()===['005_credit_requests.sql','006_capacity_permission.sql'],'only additive005 and006 run on old004');
  opCheck(creditFingerprint($app,$oldTables)===$beforeUpgrade,'all old table rows exact preserved incl hashes/auth/mail/outbox/seats');
  opCheck(array_slice($db->all('SELECT version,checksum,applied_at FROM schema_migrations ORDER BY version'),0,4)===$migrationBefore,'old migration records preserved');
  opCheck((new Migrator($app))->run()===[],'repeat migration idempotent'); opCheck((new Credits($domain))->ready(),'credit005 readiness true');
@@ -57,7 +57,6 @@ try {
  readOp(new OpsClient(),'/credit-requests',[],401); readOp($hr,'/admin/credit-requests',[],403); readOp($u1,'/admin/credit-requests',[],403);
  readOp($hr,'/admin/people/summary',['owner_id'=>$people['one']],403); readOp($u2,'/summary',['owner_id'=>$people['one']],404);
  foreach ([0,-1,1.5,'500',100000001] as $invalid) { mutate($u1,'/credit-requests',['account_id'=>$a['id'],'requested_credits'=>$invalid,'reason_text'=>'دلیل معتبر'],422); }
- mutate($u1,'/credit-requests',['account_id'=>$a['id'],'requested_credits'=>500,'reason_text'=>''],422);
  mutate($u1,'/credit-requests',['account_id'=>$a['id'],'requested_credits'=>500,'reason_text'=>str_repeat('ا',2001)],422);
  mutate($u1,'/credit-requests',['account_id'=>$a['id'],'requested_credits'=>500,'reason_text'=>"دلیل\x01نامعتبر"],422);
  mutate($u1,'/credit-requests',['account_id'=>$a['id'],'requested_credits'=>500,'reason_text'=>'دلیل','unexpected'=>true],422);
@@ -92,7 +91,7 @@ try {
  mutate($operator,'/admin/credit-requests/complete',array_replace($complete,['limit_after'=>1500]),422);
  mutate($operator,'/admin/credit-requests/complete',array_replace($complete,['observed_at'=>nowOp(500)]),422);
  mutate($operator,'/admin/credit-requests/complete',array_replace($complete,['observed_at'=>'2000-01-01T00:00:00Z']),422);
- mutate($operator,'/admin/credit-requests/complete',array_replace($complete,['evidence'=>'']),422);
+ mutate($operator,'/admin/credit-requests/complete',array_replace($complete,['evidence'=>[]]),422);
  mutate($operator,'/admin/credit-requests/complete',array_replace($complete,['evidence'=>str_repeat('ا',2001)]),422);
  mutate($operator,'/admin/credit-requests/complete',array_replace($complete,['period_ends_at'=>'2000-01-01T00:00:00Z']),422);
  $done=mutate($operator,'/admin/credit-requests/complete',$complete+['idempotency_key'=>$key=keyOp()])['request'];
@@ -146,6 +145,10 @@ try {
  mutate($operator,'/admin/credit-requests/start',['request_id'=>$blocked['id'],'approved_credits'=>20],403);
  $db->run('UPDATE users SET access_group_id=? WHERE id=?',[testGroupId($app,'operator'),$people['operator']]);
  opCheck((int)$db->one('SELECT COUNT(*) n FROM credit_request_events WHERE request_id=?',[$blocked['id']])['n']===1,'permission failure does not append approval');
+ // Optional result notes do not remove actual limit and confirmation checks.
+ mutate($operator,'/admin/credit-requests/start',['request_id'=>$blocked['id'],'approved_credits'=>20]);
+ $optional=mutate($operator,'/admin/credit-requests/complete',['request_id'=>$blocked['id'],'limit_before'=>1300,'limit_after'=>1320,'observed_at'=>nowOp(),'confirmed'=>true])['request'];
+ opCheck($optional['status']==='completed'&&$optional['evidence']==='','completion accepts omitted notes while recording actual limits');
  // Historical requests retain their requester, without exposing another owner's current alias/state.
  $db->run('UPDATE openai_accounts SET owner_id=?,alias=? WHERE id=?',[$people['two'],'نام خصوصی مالک جدید',$a['id']]);
  $former=readOp($u1,'/credit-requests/detail',['id'=>$r['id']]); $adminFormer=readOp($operator,'/admin/credit-requests/detail',['id'=>$r['id']]);
@@ -154,5 +157,6 @@ try {
  $formerSummary=readOp($u1,'/summary'); $formerAccount=array_values(array_filter($formerSummary['accounts'],fn($v)=>$v['id']===$a['id']))[0];
  opCheck($formerAccount['alias']===null,'summary omits new owner alias from historical account');
  $db->run('UPDATE openai_accounts SET owner_id=?,alias=NULL WHERE id=?',[$people['one'],$a['id']]);
- echo json_encode(['checks'=>$assertions,'passed'=>true,'synthetic_only'=>true,'upgrade_tables_preserved'=>count($oldTables),'migration'=>'004→005','no_transport_send'=>true],JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE)."\n";
+ $blank=mutate($u1,'/credit-requests',['account_id'=>$a['id'],'requested_credits'=>500])['request']; opCheck($blank['reason_text']==='','credit request accepts omitted explanation'); mutate($u1,'/credit-requests/cancel',['request_id'=>$blank['id']]);
+ echo json_encode(['checks'=>$assertions,'passed'=>true,'synthetic_only'=>true,'upgrade_tables_preserved'=>count($oldTables),'migration'=>'004→006','no_transport_send'=>true],JSON_PRETTY_PRINT|JSON_UNESCAPED_UNICODE)."\n";
 } catch (Throwable $e) { fwrite(STDERR,'Credit integration failed: '.$e->getMessage()."\n"); exit(1); }

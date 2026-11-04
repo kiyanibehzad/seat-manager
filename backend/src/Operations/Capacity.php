@@ -59,7 +59,7 @@ final class Capacity
             foreach (['standard','premium','expected_revision'] as $key) { if (!isset($data[$key])||!is_int($data[$key])||$data[$key]<0) { Input::invalid($key); } }
             if (!Input::boolean($data,'confirmed')) { Input::invalid('confirmed'); }
             $pool=$this->d->app->db->one('SELECT * FROM seat_capacity WHERE id=1'); if ((int)$pool['revision']!==$data['expected_revision']) { $this->d->conflict(); }
-            $this->record($data['standard'],$data['premium'],$fresh,Input::text($data,'reason',2000),Input::text($data,'evidence',4000),$this->finance($data['finance']??null));
+            $this->record($data['standard'],$data['premium'],$fresh,Input::note($data,'reason',2000),Input::note($data,'evidence',4000),$this->finance($data['finance']??null));
             return ['capacity'=>$this->snapshot()];
         });
     }

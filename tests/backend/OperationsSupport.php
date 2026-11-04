@@ -74,26 +74,26 @@ function accountOp(OpsClient $client,string $email): array { return mutate($clie
 function freshOp(int $id): array { global $domain; return $domain->publicAccount($domain->account($id),true); }
 function capacityOp(int $extraStd=0,int $extraPrem=0): array {
  global $admin,$domain; $c=(new Capacity($domain))->snapshot();
- return mutate($admin,'/admin/capacity',['standard'=>$c['standard']['assigned']+$c['standard']['held']+$extraStd,'premium'=>$c['premium']['assigned']+$c['premium']['held']+$extraPrem,'expected_revision'=>$c['revision'],'confirmed'=>true,'reason'=>'ظرفیت واقعی آزمون','evidence'=>'بررسی ثبت‌شدهٔ محیط آزمون'])['capacity'];
+ return mutate($admin,'/admin/capacity',['standard'=>$c['standard']['assigned']+$c['standard']['held']+$extraStd,'premium'=>$c['premium']['assigned']+$c['premium']['held']+$extraPrem,'expected_revision'=>$c['revision'],'confirmed'=>true])['capacity'];
 }
 function correctOp(array $account,string $seat,?string $start=null,?string $end=null,?string $return=null): array {
  global $admin; $state=['seat'=>$seat,'starts_at'=>$start,'ends_at'=>$end]; if ($return!==null) { $state['return_seat']=$return; }
- return mutate($admin,'/admin/corrections',['account_id'=>$account['id'],'state_version'=>freshOp($account['id'])['state_version'],'state'=>$state,'observed_at'=>nowOp(),'confirmed'=>true,'reason'=>'اصلاح واقعیت آزمون','evidence'=>'بررسی مستقل وضعیت واقعی'])['operation']['items'][0]['account'];
+ return mutate($admin,'/admin/corrections',['account_id'=>$account['id'],'state_version'=>freshOp($account['id'])['state_version'],'state'=>$state,'observed_at'=>nowOp(),'confirmed'=>true])['operation']['items'][0]['account'];
 }
 function requestOp(OpsClient $client,array $account,string $seat='premium',?string $start=null,?string $end=null,array $extra=[]): array {
  return mutate($client,'/requests',$extra+['account_id'=>$account['id'],'kind'=>'seat','seat'=>$seat,'temporary'=>$end!==null,'starts_at'=>$start,'ends_at'=>$end])['request'];
 }
 function startRequestOp(array $request,array $extra=[]): array {
- global $operator; return mutate($operator,'/admin/requests/start',$extra+['request_id'=>$request['id'],'state_version'=>freshOp($request['account']['id'])['state_version'],'reason'=>'شروع رسیدگی آزمون'])['operation'];
+ global $operator; return mutate($operator,'/admin/requests/start',$extra+['request_id'=>$request['id'],'state_version'=>freshOp($request['account']['id'])['state_version']])['operation'];
 }
 function resultsOp(array $operation,?array $only=null,bool $before=false): array {
  $out=[]; foreach ($operation['items'] as $item) { $a=freshOp($item['account']['id']); if ($only!==null&&!in_array($a['id'],$only,true)) { continue; } $state=$item[$before?'before':'target']; $out[]=['account_id'=>$a['id'],'owner_id'=>$a['owner_id'],'email'=>$a['email'],'state_version'=>$a['state_version'],'confirmed'=>true,'seat'=>$state['seat'],'starts_at'=>$state['starts_at']??null,'ends_at'=>$state['ends_at']??null,'observed_at'=>nowOp()]; } return $out;
 }
 function resultOp(array $operation,bool $complete=true,?array $only=null,OpsClient|null $actor=null,array $extra=[]): array {
- global $operator; return mutate($actor??$operator,'/admin/operations/result',$extra+['operation_id'=>$operation['id'],'complete'=>$complete,'results'=>resultsOp($operation,$only),'reason'=>'ثبت نتیجهٔ بررسی‌شده','evidence'=>'تأیید دقیق حساب‌های آزمون']);
+ global $operator; return mutate($actor??$operator,'/admin/operations/result',$extra+['operation_id'=>$operation['id'],'complete'=>$complete,'results'=>resultsOp($operation,$only)]);
 }
 function directOp(array $account,string $seat,array $extra=[]): array {
- global $operator; return mutate($operator,'/admin/operations/start',$extra+['kind'=>'direct','account_id'=>$account['id'],'state_version'=>freshOp($account['id'])['state_version'],'target'=>['seat'=>$seat],'reason'=>'اقدام مستقیم آزمون'])['operation'];
+ global $operator; return mutate($operator,'/admin/operations/start',$extra+['kind'=>'direct','account_id'=>$account['id'],'state_version'=>freshOp($account['id'])['state_version'],'target'=>['seat'=>$seat]])['operation'];
 }
 function resetOperations(): void {
  global $app; testDatabaseGuard($app); $db=$app->db; $db->run('SET FOREIGN_KEY_CHECKS=0');
