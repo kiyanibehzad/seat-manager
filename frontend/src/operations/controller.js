@@ -209,7 +209,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   function formError(f,error){
     const el=f?.querySelector('[data-op-form-error]');if(el){el.hidden=false;el.textContent=error.message||'ثبت ممکن نشد.';}else notify(error.message||'ثبت ممکن نشد.',true);
     let first=null;
-    for(const [name,message]of Object.entries(error.fields||{})){if(typeof message!=='string')continue;const input=Array.from(f?.elements||[]).find(el=>el.name===name);if(!input)continue;input.setAttribute('aria-invalid','true');const hint=document.createElement('span');hint.className='sm-error';hint.dataset.opFieldError='';hint.textContent=message;input.insertAdjacentElement('afterend',hint);first??=input;}
+    for(const [name,message]of Object.entries(error.fields||{})){if(typeof message!=='string')continue;const input=Array.from(f?.elements||[]).find(el=>el.name===name);if(!input)continue;const disclosure=input.closest('.op-optional-notes');if(disclosure)disclosure.open=true;input.setAttribute('aria-invalid','true');const hint=document.createElement('span');hint.className='sm-error';hint.dataset.opFieldError='';hint.textContent=message;input.insertAdjacentElement('afterend',hint);first??=input;}
     if(first&&!first.disabled)first.focus({preventScroll:true});
   }
   async function send(command,f=null){
@@ -270,7 +270,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     if(!draft||data.request?.id!==draft.id||data.request.status!=='pending')return;
     openForm('start-request',data.request);
     const f=content.querySelector('[data-op-form="start-request"]');
-    for(const name of ['reason','override_reason'])if(f.elements[name])f.elements[name].value=draft[name];
+    for(const name of ['reason','override_reason'])if(f.elements[name]){f.elements[name].value=draft[name];if(draft[name]){const disclosure=f.elements[name].closest('.op-optional-notes');if(disclosure)disclosure.open=true;}}
     syncForms();
   }
   function reasonRows(f=content.querySelector('[data-op-form="reasons"]')){return Array.from(f?.querySelectorAll('[data-reason-code]')||[]).map(row=>({code:row.dataset.reasonCode,label:row.querySelector('input').value.trim()}));}
@@ -316,6 +316,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     }catch(error){notify(error.message||'انجام این کار ممکن نشد.',true);}
   }
   root.addEventListener('click',event=>void click(event),{signal:lifecycle.signal});
+  root.addEventListener('invalid',event=>{const disclosure=event.target.closest('.op-optional-notes');if(disclosure)disclosure.open=true;},{capture:true,signal:lifecycle.signal});
   root.addEventListener('submit',event=>{const f=event.target.closest('[data-op-form]');if(!f)return;event.preventDefault();void submit(f,event.submitter);},{signal:lifecycle.signal});
   root.addEventListener('change',event=>{
     const input=event.target;

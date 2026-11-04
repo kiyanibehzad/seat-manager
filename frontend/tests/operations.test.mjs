@@ -7,7 +7,7 @@ import {accountModel,requestModel,operationModel,capacityModel,historyModel,etaL
 import {datePickerCheck,jalaliMonthInfo,parseJalali,shiftJalaliDays,createDateSelectionSession} from '../src/operations/dates.js';
 import {notificationRoute,routeFromUrl,routeUrl} from '../src/operations/routes.js';
 import * as view from '../src/operations/views.js';
-import {historyMarkup} from '../src/operations/ui.js';
+import {historyMarkup,requesterNote} from '../src/operations/ui.js';
 import {resultForm,abortForm,startRequestForm,capacityForm,correctionForm,directForm,simpleReasonForm,personalRequestForm} from '../src/operations/forms.js';
 import {parsePastedUsers} from '../src/operations/bulk.js';
 
@@ -120,7 +120,18 @@ test('routine operation notes are optional while renewal and rejection reasons r
   const account=accountModel(fixtures().accounts[0]);
   const forms=[capacityForm({rows:[{type:'Standard',purchased:1}]}),correctionForm(account),directForm(account),simpleReasonForm('cancel-operation',1,'Cancel'),simpleReasonForm('revalidate-request',1,'Review')];
   for(const html of forms){
+    assert.match(html,/<details class="sm-wide op-optional-notes"><summary>افزودن توضیحات<\/summary>/);
     for(const tag of html.match(/<textarea[^>]*>/g)||[])assert(!/\srequired(?:\s|>)/.test(tag));
   }
   for(const html of [personalRequestForm({...account,end:'1405/08/10'},{renewal:true}),simpleReasonForm('reject-request',1,'Reject')])assert.match(html,/<textarea[^>]*\srequired(?:\s|>)/);
+});
+
+test('requester explanation is readable reference text, not a reviewer input',()=>{
+  const html=requesterNote({reason_text:'<script>bad</script>\nدلیل تمدید'});
+  assert(html.includes('&lt;script&gt;bad&lt;/script&gt;'));
+  assert(!html.includes('<textarea'));
+  assert.equal(requesterNote({}), '');
+  const renewal=personalRequestForm({...accountModel(fixtures().accounts[0]),end:'1405/08/10'},{renewal:true});
+  assert(!renewal.includes('op-optional-notes'));
+  assert.match(renewal,/name="reason_text" required/);
 });

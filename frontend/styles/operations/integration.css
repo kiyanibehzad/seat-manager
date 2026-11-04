@@ -1,5 +1,13 @@
 #main-content:has(.acc-operations){padding:0;display:block}
 .acc-operations{background:var(--sm-bg);min-width:0;color-scheme:inherit}
+.acc-operations .op-optional-notes{min-width:0;border:0;padding:0;background:transparent}
+.acc-operations .op-optional-notes>summary{width:fit-content;cursor:pointer;padding:6px 0;font-weight:600;color:var(--sm-text)}
+.acc-operations .op-optional-notes>summary:hover{text-decoration:underline;text-underline-offset:4px}
+.acc-operations .op-optional-notes>summary:focus-visible{outline:2px solid currentColor;outline-offset:4px;border-radius:4px}
+.acc-operations .op-optional-notes[open]>.sm-form-grid{margin-block-start:12px}
+.acc-operations .op-requester-note{min-width:0;border-inline-start:2px solid var(--sm-line);padding-inline-start:12px}
+.acc-operations .op-requester-note>strong{font-size:13px;color:var(--sm-muted)}
+.acc-operations .op-requester-note>p{margin:4px 0 0;white-space:pre-wrap;overflow-wrap:anywhere;line-height:1.9}
 .acc-operations .sm-product{max-width:none;width:100%;border:0}
 .acc-operations .op-align-right{text-align:right!important}
 .acc-operations .op-align-center{text-align:center!important}

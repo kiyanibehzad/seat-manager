@@ -65,7 +65,7 @@
 
 ## دریافت و نصب روی هاست
 
-[دانلود بستهٔ نصب `seat-manager-v0.1.0-beta.6.zip`](https://github.com/kiyanibehzad/seat-manager/releases/download/v0.1.0-beta.6/seat-manager-v0.1.0-beta.6.zip) · [همهٔ نسخه‌ها و فایل‌های بررسی صحت دانلود](https://github.com/kiyanibehzad/seat-manager/releases)
+[دانلود بستهٔ نصب `seat-manager-v0.1.0-beta.7.zip`](https://github.com/kiyanibehzad/seat-manager/releases/download/v0.1.0-beta.7/seat-manager-v0.1.0-beta.7.zip) · [همهٔ نسخه‌ها و فایل‌های بررسی صحت دانلود](https://github.com/kiyanibehzad/seat-manager/releases)
 
 این بسته شامل رابط ساخته‌شده، وابستگی‌های PHP، فونت وزیرمتن و راهنمای نصب است. برای نصب آن روی هاست، اجرای Node.js یا Composer لازم نیست. فایل `SHA256SUMS.txt` کنار بسته برای کنترل صحت دانلود در دسترس است. آرشیوهای خودکار **Source code** گیت‌هاب، سورس توسعه هستند و وابستگی‌های آمادهٔ نصب را ندارند.
 
