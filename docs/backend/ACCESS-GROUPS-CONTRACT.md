@@ -8,13 +8,16 @@
 |---|---|---|---|
 | `dashboard.read` | کارهای روزانه | `seats.manage` | خواندن dashboard و مسیر کامل پرونده از قابلیت سیت‌ها |
 | `seats.manage` | مدیریت سیت‌ها و درخواست‌ها | ندارد | seats.manage، requests.manage، capacity.read و تاریخچه/صف عملیاتی |
+| `capacity.manage` | ثبت و تغییر ظرفیت خریداری‌شده | `seats.manage` | ثبت تعداد واقعی ظرفیت و تبدیل نوع سیت؛ بدون دسترسی به گزارش مالی یا تنظیمات |
 | `registrations.review` | تأیید و رد ثبت‌نام | ندارد | فقط فهرست منتظر تأیید و approve/reject؛ بدون لیست/ویرایش افراد |
 | `people.manage` | مدیریت افراد | ندارد | فهرست، ساخت تکی/لیستی، مشخصات/بخش/سمت و فعال/غیرفعال‌کردن |
 | `departments.manage` | مدیریت بخش‌ها و امتیازها | `people.manage` | تعریف/امتیاز بخش و کنترل امتیاز ویژهٔ کارکنان |
 
 سرور مجموعهٔ ناقص را با 422 و fields.capabilities رد می‌کند؛ catalog وابستگی را می‌دهد تا رابط checkbox لازم را هم روشن کند. خاموش‌کردن پیش‌نیاز، در رابط باید قابلیت وابسته را هم خاموش کند. کنترل امتیاز ویژه فقط با departments.manage است؛ people.manage به‌تنهایی special_priority را نمی‌نویسد و رابط کنترل ویرایش آن را نشان ندهد. این یک قاعدهٔ ثابتِ قابلیت «امتیازها» است، نه تنظیم مجوز برای تک‌تک فیلدها. خواندن بخش‌ها برای انتخاب بخش در فرم ثبت‌نام/کارمند، مثل قبل برای کاربران واردشده مجاز است.
 
-مدیر کل با گروه محافظت‌شدهٔ admin همهٔ قابلیت‌ها را دارد. finance.read، capacity.manage، settings.manage، roles.manage و access_groups.manage فقط متعلق به همین گروه‌اند و checkbox نیستند. گروه admin قابل حذف/کاهش قابلیت/ویرایش نیست. آخرین مدیر کل فعالِ تأییدشده قابل غیرفعال‌کردن یا انتقال به گروه دیگر نیست.
+مدیر کل با گروه محافظت‌شدهٔ admin همهٔ قابلیت‌ها را دارد. finance.read، settings.manage، roles.manage و access_groups.manage فقط متعلق به همین گروه‌اند و checkbox نیستند. گروه admin قابل حذف/کاهش قابلیت/ویرایش نیست. آخرین مدیر کل فعالِ تأییدشده قابل غیرفعال‌کردن یا انتقال به گروه دیگر نیست.
+
+از مهاجرت `006_capacity_permission.sql`، مدیر کل می‌تواند `capacity.manage` را برای گروه اپراتور یا گروه سفارشی فعال کند. مهاجرت فقط کد قابلیت را اضافه می‌کند و به هیچ گروه موجودی دسترسی جدید نمی‌دهد. در فرم شروع رسیدگی، فرد دارای این مجوز با «ثبت ظرفیت جدید» تعداد کل واقعی سیت‌های خریداری‌شده را ثبت می‌کند و به همان درخواست برمی‌گردد؛ دلیل اقدام حفظ و ظرفیت دوباره خوانده می‌شود. ثبت ظرفیت، خرید یا تکمیل خودکار درخواست نیست. تبدیل پولی تنها برای Standard به Premium است؛ No Seat به ظرفیت آزاد یا انتقال نیاز دارد.
 
 گروه‌های اولیه: user=فقط شخصی؛ hr=registrations.review+people.manage+departments.manage؛ operator=dashboard.read+seats.manage+registrations.review؛ admin=همه. گروه user نیز شخصی‌فقط و محافظت‌شده است (protected=true، is_super_admin=false، capabilities=[]). گروه‌های hr/operator و گروه‌های سفارشی قابل ویرایش‌اند؛ تغییر گروه روی همهٔ اعضای همان گروه اثر دارد. کاربران تازه/تأیید ثبت‌نام/ساخت تکی و لیستی، به‌صورت پیش‌فرض عضو گروه اولیهٔ user می‌شوند؛ فقط مدیر کل می‌تواند گروه فرد را عوض کند.
 
@@ -43,7 +46,7 @@
 {"access_group_id":3,"access_group_name":"اپراتور حساب‌ها","is_super_admin":false}
 ```
 
-session علاوه بر permissions سابق، `capabilities:[پنج کد قابل انتخابِ مجاز همین گروه]` و `access_groups_ready:bool` می‌دهد. personal.read/personal.request/notifications.read برای همه هستند. برای نمایش منو/عملیات به permissions تکیه شود؛ app_role فقط سازگاری داده‌ای است. نمونهٔ گروه اپراتور بعد از migration، registrations.review دارد ولی people.manage ندارد. dashboard فقط با dashboard.read و فهرست ثبت‌نام فقط با registrations.review باز می‌شوند.
+session علاوه بر permissions سابق، `capabilities:[شش کد قابل انتخابِ مجاز همین گروه]` و `access_groups_ready:bool` می‌دهد. personal.read/personal.request/notifications.read برای همه هستند. برای نمایش منو/عملیات به permissions تکیه شود؛ app_role فقط سازگاری داده‌ای است. نمونهٔ گروه اپراتور بعد از migration، registrations.review دارد ولی people.manage ندارد. dashboard فقط با dashboard.read و فهرست ثبت‌نام فقط با registrations.review باز می‌شوند.
 
 تغییر نام/قابلیت گروه با revision تازه ثبت می‌شود و auth_version اعضا را افزایش می‌دهد؛ انتساب گروه هم auth_version فرد را افزایش می‌دهد. نشست‌های قدیمی در درخواست بعدی باطل می‌شوند؛ رابط از session تازه استفاده کند. تغییر access_group، department/position/special_priority یا score را دست نمی‌زند.
 

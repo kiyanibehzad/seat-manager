@@ -61,7 +61,7 @@ try {
     $installSecret=bin2hex(random_bytes(32)); $config['setup']=['enabled'=>true,'token_hash'=>hash('sha256',$installSecret)];
     file_put_contents($scratch.'/config/local.php','<?php return '.var_export($config,true).';');
     $app=new App($scratch,$config); agCheck(count((new Migrator($app))->run())===2,'baseline migrations in fresh independent DB');
-    $db=$app->db; $password=bin2hex(random_bytes(16)); $passwordHash=password_hash($password,PASSWORD_DEFAULT);
+    $db=$app->db; $password=bin2hex(random_bytes(16)); $passwordHash=\AccManager\Passwords::hash($password);
     $db->run("INSERT INTO departments(name,base_score) VALUES('فنی',4)"); $department=(int)$db->pdo->lastInsertId(); $ids=[]; $emails=[];
     foreach (['admin','hr','operator','user'] as $role) {
         $email=$role.'-'.$nonce.'@example.test'; $emails[$role]=$email;
@@ -86,6 +86,8 @@ try {
     $chief->get('/admin/access-groups',[],503); $operator->login($emails['operator'],$password); $operator->get('/admin/dashboard'); $operator->get('/admin/registrations',[],403);
     copy($root.'/database/migrations/003_access_groups.sql',$scratch.'/database/migrations/003_access_groups.sql');
     agCheck((new Migrator($app))->run()===['003_access_groups.sql'],'only additive group migration applied in independent DB');
+    copy($root.'/database/migrations/006_capacity_permission.sql',$scratch.'/database/migrations/006_capacity_permission.sql');
+    agCheck((new Migrator($app))->run()===['006_capacity_permission.sql'],'capacity permission migration adds no membership grants');
     $app=new App($scratch,$config); $db=$app->db;
     $usersAfter=$db->all('SELECT * FROM users ORDER BY id');
     foreach ($usersBefore as $index=>$before) {
@@ -101,7 +103,9 @@ try {
     agCheck(in_array('registrations.review',$opSession['permissions'],true)&&!in_array('people.manage',$opSession['permissions'],true),'operator reviews registrations without people management');
     foreach ([$session,$hrSession,$opSession,$userSession] as $s) { agCheck(in_array('personal.read',$s['permissions'],true)&&in_array('personal.request',$s['permissions'],true)&&in_array('notifications.read',$s['permissions'],true),'all groups retain personal/notification permissions'); }
     $catalog=$chief->get('/admin/access-groups'); $byKey=array_column(array_filter($catalog['items'],static fn($group)=>is_string($group['system_key']??null)),null,'system_key');
-    agCheck(count($catalog['capability_catalog'])===5&&$byKey['user']['protected']&&!$byKey['user']['is_super_admin']&&$byKey['user']['capabilities']===[],'five checkboxes and protected personal-only default');
+    agCheck(count($catalog['capability_catalog'])===6&&$byKey['user']['protected']&&!$byKey['user']['is_super_admin']&&$byKey['user']['capabilities']===[],'six checkboxes and protected personal-only default');
+    agCheck(!in_array('capacity.manage',$byKey['operator']['capabilities'],true),'existing operators gain no capacity permission automatically');
+    $chief->write('/admin/access-groups',['name'=>'missing capacity prerequisite','capabilities'=>['capacity.manage']],422);
     foreach (['user','admin'] as $system) { $g=$byKey[$system]; $chief->write('/admin/access-groups',['group_id'=>$g['id'],'name'=>'تغییر نام','capabilities'=>[],'expected_revision'=>$g['revision']],409,'PATCH'); }
     $chief->write('/admin/access-groups',['name'=>'روزانهٔ ناقص','capabilities'=>['dashboard.read']],422);
     $chief->write('/admin/access-groups',['name'=>'امتیاز ناقص','capabilities'=>['departments.manage']],422);
@@ -148,6 +152,16 @@ try {
         $client->write('/admin/users/access-group',['user_id'=>$plain['id'],'access_group_id'=>4],403);
         $own=$client->get('/accounts'); agCheck(is_array($own['items']),'every custom capability group retains own account path');
     }
+    $capacityGroup=$createGroup('capacity opt-in '.$nonce,['seats.manage','capacity.manage']);
+    $capacityMember=$makeMember($capacityGroup['id'],'capacity');
+    $capacityClient=$capacityMember['client'];
+    $pool=$capacityClient->get('/admin/capacity')['capacity'];
+    $capacityClient->write('/admin/capacity',['standard'=>$pool['standard']['purchased'],'premium'=>$pool['premium']['purchased']+1,'expected_revision'=>$pool['revision'],'confirmed'=>true,'reason'=>'capacity test','evidence'=>'observed in fixture']);
+    $capacityClient->get('/admin/finance',[],403);$capacityClient->get('/admin/settings',[],403);$capacityClient->get('/admin/access-groups',[],403);
+    $chief->write('/admin/access-groups',['group_id'=>$capacityGroup['id'],'name'=>$capacityGroup['name'],'capabilities'=>['seats.manage'],'expected_revision'=>$capacityGroup['revision']],200,'PATCH');
+    agCheck(!$capacityClient->get('/session')['authenticated'],'capacity revocation invalidates the delegated session');
+    $capacityClient->login($capacityMember['email'],$capacityMember['password']);
+    $capacityClient->write('/admin/capacity',['standard'=>100,'premium'=>100,'expected_revision'=>0,'confirmed'=>true,'reason'=>'revoked','evidence'=>'fixture'],403);
     $plainAccount=$plain['client']->write('/accounts',['email'=>'plain-account-'.$nonce.'@example.test'])['account'];
     $orgBefore=$db->one('SELECT department_id,organizational_position,special_priority FROM users WHERE id=?',[$plain['id']]);
     $scoreBefore=$db->one("SELECT d.base_score+(u.organizational_position='supervisor')+u.special_priority score FROM users u JOIN departments d ON d.id=u.department_id WHERE u.id=?",[$plain['id']])['score'];

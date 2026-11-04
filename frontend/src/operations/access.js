@@ -1,6 +1,6 @@
 import {ApiError} from '../auth-api.js';
 
-const codes=['dashboard.read','seats.manage','registrations.review','people.manage','departments.manage'];
+const codes=['dashboard.read','seats.manage','capacity.manage','registrations.review','people.manage','departments.manage'];
 const invalid=()=>{throw new ApiError('invalid_response','اطلاعات گروه‌های دسترسی کامل دریافت نشد. دوباره تلاش کنید.');};
 export function accessGroupName(user){
   if(typeof user?.access_group_name==='string'&&user.access_group_name.trim())return user.access_group_name;

@@ -55,7 +55,7 @@ final class Engine
                 $targets[(int)$source['id']]=['seat'=>$sourceSeat,'starts_at'=>null,'ends_at'=>null,'return_seat'=>'none']; $kind='transfer';
             } elseif ($mode==='convert') {
                 $this->d->app->auth->requirePermission($fresh,'capacity.manage');
-                if ($r['kind']!=='seat'||$account['seat']!=='standard'||$r['requested_seat']!=='premium') { Input::invalid('mode'); }
+                if ($r['kind']!=='seat'||$account['seat']!=='standard'||$r['requested_seat']!=='premium') { Input::invalid('mode','تبدیل پولی فقط برای ارتقای Standard به Premium است. برای حساب No Seat، انتقال از حساب دیگر یا ثبت ظرفیت خریداری‌شدهٔ واقعی را انتخاب کنید.'); }
                 $kind='paid_conversion'; $strategy='convert';
             } elseif (isset($data['source_account_id'])||isset($data['source_final_seat'])) { Input::invalid('source_account_id'); }
             $operation=$this->begin($fresh,$kind,$targets,$reason,(int)$r['id'],$strategy,$override);

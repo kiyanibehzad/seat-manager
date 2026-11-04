@@ -39,6 +39,9 @@ try {
  mutate($u1,'/requests',['account_id'=>$a['id'],'seat'=>'standard','temporary'=>false,'starts_at'=>nowOp(),'ends_at'=>nowOp(86400)],422);
  $command=['account_id'=>$a['id'],'seat'=>'premium','temporary'=>false,'idempotency_key'=>keyOp()];
  $r=mutate($u1,'/requests',$command)['request']; $repeat=mutate($u1,'/requests',$command)['request']; opCheck($r['id']===$repeat['id'],'request idempotency');
+ $invalidConversion=$admin->call('POST','/admin/requests/start',['request_id'=>$r['id'],'state_version'=>$a['state_version'],'mode'=>'convert','reason'=>'conversion regression','idempotency_key'=>keyOp()]);
+ opCheck($invalidConversion['status']===422&&str_contains($invalidConversion['body']['error']['fields']['mode']??'','No Seat'),'No Seat paid conversion rejected with actionable field error');
+ opCheck(readOp($u1,'/requests/detail',['id'=>$r['id']])['request']['status']==='pending'&&freshOp($a['id'])['seat']==='none','rejected conversion leaves request and account unchanged');
  mutate($u1,'/requests',['account_id'=>$a['id'],'seat'=>'premium'],409); mutate($u2,'/requests/cancel',['request_id'=>$r['id']],404);
  readOp($u2,'/requests/detail',['id'=>$r['id']],404); mutate($u1,'/requests/cancel',['request_id'=>$r['id']]);
  $badCommand=$command; $badCommand['seat']='standard'; mutate($u1,'/requests',$badCommand,409);

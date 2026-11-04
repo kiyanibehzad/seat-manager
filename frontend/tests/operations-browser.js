@@ -62,6 +62,7 @@ const transport={
     writes++;document.querySelector('#write-count').textContent=writes+' ثبت آزمایشی';document.querySelector('#write-count').dataset.count=String(writes);
     document.querySelector('#last-command').textContent=JSON.stringify({route,body:route.startsWith('/admin/mail')?Object.fromEntries(Object.entries(body).filter(([key])=>key!=='smtp_password')):body,method:options?.method||'POST'});
     if(route.startsWith('/admin/mail'))return mail.write(route,body,scenario);
+    if(route==='/admin/capacity'){for(const seat of ['standard','premium']){f.capacity[seat]={...f.capacity[seat],purchased:body[seat],free:body[seat]-f.capacity[seat].assigned-f.capacity[seat].held};}f.capacity.revision++;return{capacity:f.capacity};}
     if(scenario==='forbidden')throw Object.assign(Error('دسترسی این کار را ندارید.'),{code:'forbidden',status:403});
     if(route==='/admin/access-groups'){
       const existing=access.items.find(g=>g.id===body.group_id);

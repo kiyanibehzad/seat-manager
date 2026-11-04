@@ -19,7 +19,9 @@ export function creditFixtures(){
   return {request,history,summary};
 }
 export function accessGroupFixtures(){
+  const capacityCapability={code:'capacity.manage',label:'ثبت و تغییر ظرفیت خریداری‌شده',requires:['seats.manage']};
   const capability_catalog=[{code:'dashboard.read',label:'کارهای روزانه',requires:['seats.manage']},{code:'seats.manage',label:'مدیریت سیت‌ها و درخواست‌ها',requires:[]},{code:'registrations.review',label:'تأیید و رد ثبت‌نام',requires:[]},{code:'people.manage',label:'مدیریت افراد',requires:[]},{code:'departments.manage',label:'مدیریت بخش‌ها و امتیازها',requires:['people.manage']}];
+  capability_catalog.splice(2,0,capacityCapability);
   const make=(id,name,system_key,capabilities,protectedGroup=false,is_super_admin=false)=>({id,name,system_key,capabilities,protected:protectedGroup,is_super_admin,revision:1,user_count:1});
   return {capability_catalog,items:[make(1,'کاربر عادی','user',[],true),make(2,'منابع انسانی','hr',['registrations.review','people.manage','departments.manage']),make(3,'اپراتور حساب‌ها','operator',['dashboard.read','seats.manage','registrations.review']),make(4,'مدیر کل','admin',capability_catalog.map(c=>c.code),true,true),make(5,'بررسی ثبت‌نام‌ها',null,['registrations.review']),make(6,'هماهنگ‌کنندهٔ افراد',null,['people.manage'])]};
 }

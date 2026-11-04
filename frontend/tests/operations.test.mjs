@@ -88,6 +88,18 @@ test('server capacity and dashboard order/count are displayed without client rec
   const dashboard=dashboardModel({today:[{key:'request:501',kind:'request',request:f.request}],tomorrow:[],counts:{today:42,tomorrow:0},iran_today:'2026-10-24'});assert.equal(dashboard.today[0].request.id,501);assert(view.dailyView({...dashboard,capacity}).includes('۴۲'));assert.equal(dashboard.iranToday,'1405/08/02');
   const request=requestModel(f.request),empty={...capacityModel(f.capacity),rows:[{type:'Premium',free:0},{type:'Standard',free:0}]},start=startRequestForm(request,{capacity:empty,sources:f.accounts.map(a=>accountModel(a))});assert(start.includes('value="reserve"  disabled'));assert(start.includes('value="transfer" selected'));assert(start.includes('ظرفیت آزاد Premium: ۰'));assert(start.includes('data-reserve-available="false"'));const renewal=startRequestForm({...request,kind:'renewal'},{capacity:empty});assert(renewal.includes('data-reserve-available="true"'));
 });
+test('paid conversion is offered only for an existing Standard seat, with a safe empty-capacity state',()=>{
+  const f=fixtures(),request=requestModel(f.request),capacity={rows:[{type:'Premium',free:0},{type:'Standard',free:0}]};
+  const render=(seat,options={})=>startRequestForm({...request,account:{...request.account,seat}},{capacity,canConvert:true,...options});
+  const none=render('none');assert(!none.includes('value="convert"'));assert(none.includes('value="" selected disabled'));assert(none.includes('value="transfer"  disabled'));assert(none.includes('No Seat'));assert(none.includes('data-op-action="request-capacity"'));
+  const standard=render('Standard');assert(standard.includes('value="convert" selected'));assert(!render('Standard',{canConvert:false}).includes('value="convert"'));assert(!render('Premium').includes('value="convert"'));
+  const sources=[{id:91,owner_id:request.owner_id+1,seat:'Premium',locked:false,email:'source@example.test'}];
+  assert(render('none',{sources}).includes('value="transfer" selected'));
+  assert(render('none',{sources:[{...sources[0],locked:true}]}).includes('value="" selected disabled'));
+  assert(render('none',{sources:[{...sources[0],owner_id:request.owner_id}]}).includes('value="" selected disabled'));
+  assert(render('none',{capacity:{rows:[{type:'Premium',free:1}]}}).includes('value="reserve" selected'));
+  const renewal=startRequestForm({...request,kind:'renewal'},{capacity,canConvert:true});assert(!renewal.includes('name="mode"'));assert(renewal.includes('data-reserve-available="true"'));
+});
 test('partial operation remains ongoing and history shows recorded/observed time plus reason/evidence',()=>{
   const f=fixtures(),op=operationModel({...f.operation,phase:'partial',items:f.operation.items.map((item,i)=>({...item,result_recorded:i===0}))});const html=view.operationDetailView(op,{history:historyModel(f.history),canCapacity:true});assert(html.includes('عملیات هنوز ناتمام است'));assert(html.includes('ثبت بازگشت و خاتمهٔ ناموفق'));assert(html.includes('دلیل آزمون'));assert(html.includes('شرح بررسی آزمون'));assert(!html.includes('زمان ثبت نشده'));assert(!html.includes('لغو پیگیری'));assert(!html.includes('data-op-action="invitation"'));assert(!html.includes('data-op-action="defer-operation"'));
   const joining=operationModel(f.operation),untouched={...joining,parties:joining.parties.map((p,i)=>i===0?{...p,before:{...p.before,seat:'Standard'}}:p)};assert(!view.operationDetailView(untouched).includes('data-op-action="invitation"'));assert(view.operationDetailView(joining).includes('data-op-action="invitation"'));assert(view.operationDetailView(joining).includes('data-op-action="defer-operation"'));

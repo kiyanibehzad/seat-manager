@@ -20,12 +20,14 @@ test('named access group is escaped and chief remains protected without an edit 
   const html=accessGroupsView({groups:[{id:1,name:'مدیر کل',protected:true,is_super_admin:true,capabilities:[]},{id:7,name:'<img src=x onerror=bad()>',protected:false,capabilities:['registrations.review']}],capabilities});
   assert(!html.includes('<img'));assert(html.includes('&lt;img'));assert(html.includes('تأیید و رد ثبت‌نام'));assert(html.includes('data-op-action="edit-access-group" data-id="7"'));assert(!html.includes('data-op-action="edit-access-group" data-id="1"'));assert(html.includes('محافظت‌شده'));
 });
-test('group form exposes five simple options and assignment chooses exactly one independent group',()=>{
-  const group={id:7,name:'گروه بررسی',capabilities:['registrations.review']};const html=accessGroupForm(group,capabilities);assert.equal((html.match(/name="capabilities"/g)||[]).length,5);assert(html.includes('checked  value="registrations.review"'));assert(!html.includes('name="department_id"'));assert(html.includes('اعلان‌ها'));
+test('group form exposes six simple options and assignment chooses exactly one independent group',()=>{
+  const group={id:7,name:'گروه بررسی',capabilities:['registrations.review']};const html=accessGroupForm(group,capabilities);assert.equal((html.match(/name="capabilities"/g)||[]).length,6);assert(html.includes('checked  value="registrations.review"'));assert(!html.includes('name="department_id"'));assert(html.includes('اعلان‌ها'));
   const assignment=accessGroupAssignmentForm({...fixtures().users[0],access_group_id:7},[{id:1,name:'مدیر کل'},group]);assert(assignment.includes('name="access_group_id"'));assert(assignment.includes('value="7" selected'));assert(!assignment.includes('name="app_role"'));assert(!assignment.includes('name="department_id"'));
 });
 
 test('catalog dependencies select prerequisites and remove dependent capabilities',()=>{
+  assert.deepEqual(toggleCapabilities([],'capacity.manage',true,capabilities),['seats.manage','capacity.manage']);
+  assert.deepEqual(toggleCapabilities(['seats.manage','capacity.manage'],'seats.manage',false,capabilities),[]);
   assert.deepEqual(toggleCapabilities([],'dashboard.read',true,capabilities),['dashboard.read','seats.manage']);
   assert.deepEqual(toggleCapabilities(['dashboard.read','seats.manage','registrations.review'],'seats.manage',false,capabilities),['registrations.review']);
   assert.deepEqual(toggleCapabilities([],'departments.manage',true,capabilities),['people.manage','departments.manage']);

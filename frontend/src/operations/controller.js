@@ -19,6 +19,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
   const root=container.querySelector('.acc-operations'),content=root.querySelector('#mg-content'),notice=root.querySelector('[data-op-notice]');
   let route=initialRoute||routeFromUrl(location.href,permissions),data={},form=null,context=null,loadAbort=null,loadSequence=0,destroyed=false,writing=false,uncertain=null,previous=[];
   let mailPanel=null;
+  let capacityReturn=null;
   let expandedUser=null,bulkRows=[],bulkPreview=null,reasonDraft=null;
   const picker=mountJalaliPicker({root,getBounds:dateBounds});
   const headerTools=document.querySelector('.app-header .header-tools');
@@ -201,7 +202,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
     if(f.elements.target_seat)for(const name of ['target_start','target_end'])if(f.elements[name]){f.elements[name].disabled=f.elements.target_seat.value==='none';f.elements[name].closest('.sm-field').hidden=f.elements[name].disabled;if(f.elements[name].disabled)f.elements[name].value='';}
     if(f.dataset.opForm==='correct-account')for(const name of ['start','end'])if(f.elements[name]){f.elements[name].disabled=f.elements.seat.value==='none';f.elements[name].closest('.sm-field').hidden=f.elements[name].disabled;if(f.elements[name].disabled)f.elements[name].value='';}
     for(const party of f.querySelectorAll('[data-result-party]')){const included=party.querySelector('[data-result-include]').checked;const selector=party.querySelector('select');for(const control of party.querySelectorAll('input,select'))if(!control.hasAttribute('data-result-include')){control.disabled=!included||(control.hasAttribute('data-jalali')&&selector.value==='none');if(control.hasAttribute('data-jalali')){control.closest('.sm-field').hidden=selector.value==='none';if(selector.value==='none')control.value='';}}}
-    if(f.dataset.opForm==='start-request')f.querySelector('[type="submit"]').disabled=f.dataset.reserveAvailable==='false'&&(!f.elements.mode||f.elements.mode.value==='reserve');
+    if(f.dataset.opForm==='start-request')f.querySelector('[type="submit"]').disabled=f.dataset.reserveAvailable==='false'&&(!f.elements.mode||!f.elements.mode.value||f.elements.mode.value==='reserve');
     const checks=Array.from(f.querySelectorAll('[data-op-confirm]'));const submit=f.querySelector('[data-requires-confirmation]');if(submit)submit.disabled=!checks.length||checks.some(i=>!i.checked);
     if(['operation-result','operation-abort'].includes(f.dataset.opForm)){const parties=Array.from(f.querySelectorAll('[data-result-party]')),selected=parties.filter(p=>p.querySelector('[data-result-include]').checked),verified=selected.length>0&&selected.every(p=>p.querySelector('[data-result-confirm]').checked);if(f.querySelector('[data-result-partial]'))f.querySelector('[data-result-partial]').disabled=!verified;f.querySelector('[data-result-complete]').disabled=!verified||selected.length!==parties.length||(f.dataset.opForm==='operation-result'&&data.operation.kind==='paid_conversion'&&!data.operation.capacityApplied&&!f.elements.capacity_confirmed?.checked);}
   }picker.validate();}
@@ -223,7 +224,9 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       else if(command.route.startsWith('/credit-requests')&&result.request?.id)route={page:'requests',tab:'credits',creditId:result.request.id};
       else if(command.route==='/requests'&&result.request?.id)route={page:'requests',requestId:result.request.id};
       const anchor=f?.closest('[data-inline-editor]')?content.querySelector('[aria-controls="op-inline-editor"]'):null;
-      navigate(routeUrl(baseUrl,route));await load({anchor});notify('تغییر ثبت شد.');
+      navigate(routeUrl(baseUrl,route));await load({anchor});
+      if(command.route==='/admin/capacity'&&capacityReturn)resumeRequestStart();
+      notify('تغییر ثبت شد.');
     }catch(error){if(destroyed||error.code==='aborted')return;if(['network_error','invalid_response'].includes(error.code)){uncertain={command};notify('نتیجهٔ ثبت مشخص نیست. «بررسی دوبارهٔ همان ثبت» را بزنید؛ درخواست تازه‌ای نسازید.',true);notice.insertAdjacentHTML('beforeend',button('بررسی دوبارهٔ همان ثبت','retry-command'));}
       else if(error.status===409){uncertain=null;await load();notify(error.message+' اطلاعات تازه دریافت شد؛ دوباره بررسی کنید.',true);}
       else if(command.route==='/admin/users/bulk-commit'&&Array.isArray(error.fields?.rows)){bulkPreview={...bulkPreview,valid:false,rows:error.fields.rows};render();notify(error.message,true);}else if(!f){await load();notify(error.message||'ثبت ممکن نشد.',true);}else formError(f,error);
@@ -262,10 +265,24 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       if(!command)throw new ApiError('validation_failed','فرم معتبر پیدا نشد.');await send(command,f);
     }catch(error){formError(f,error);}
   }
+  function resumeRequestStart(){
+    const draft=capacityReturn;capacityReturn=null;
+    if(!draft||data.request?.id!==draft.id||data.request.status!=='pending')return;
+    openForm('start-request',data.request);
+    const f=content.querySelector('[data-op-form="start-request"]');
+    for(const name of ['reason','override_reason'])if(f.elements[name])f.elements[name].value=draft[name];
+    syncForms();
+  }
   function reasonRows(f=content.querySelector('[data-op-form="reasons"]')){return Array.from(f?.querySelectorAll('[data-reason-code]')||[]).map(row=>({code:row.dataset.reasonCode,label:row.querySelector('input').value.trim()}));}
   async function click(event){const b=event.target.closest('[data-op-action]');if(!b||!root.contains(b)||writing)return;const action=b.dataset.opAction,id=b.dataset.id;
     try{
-      if(action==='navigate')routeTo({page:id});
+      if(action==='navigate'){capacityReturn=null;routeTo({page:id});}
+      else if(action==='request-capacity'){
+        requirePermission('capacity.manage');
+        const current=b.closest('[data-op-form="start-request"]');
+        capacityReturn={id:data.request.id,reason:current.elements.reason.value,override_reason:current.elements.override_reason.value};
+        openForm('capacity');
+      }
       else if(action==='reload')void load();else if(action==='back')routeTo(previous.pop()||{page:route.page,tab:route.tab,day:route.day},{remember:false});
       else if(action==='personal-credit'||action==='admin-credit')routeTo({page:action==='personal-credit'?'requests':'seats',tab:'credits',creditId:objectId(id),day:route.day});
       else if(action==='requests-tab')routeTo({page:'requests',tab:id});
@@ -286,7 +303,7 @@ export function mountOperations({container,transport,session,baseUrl,initialRout
       else if(action==='bulk-commit'&&bulkPreview?.valid)await send({route:'/admin/users/bulk-commit',body:{batch_id:bulkPreview.batch_id}});
       else if(action==='reason-add'||action==='reason-remove'){requirePermission('settings.manage');reasonDraft=reasonRows();if(action==='reason-add')reasonDraft.push({code:'reason_'+crypto.randomUUID().replaceAll('-',''),label:''});else reasonDraft.splice(Number(id),1);content.querySelector('[data-op-form="reasons"]').outerHTML=views.reasonEditorView(reasonDraft);}
       else if(action==='close-form'&&b.closest('[data-inline-editor]'))closeInlineEditor(true);
-      else if(action==='close-form'){form=null;context=null;render();}
+      else if(action==='close-form'){if(capacityReturn&&b.closest('[data-op-form="capacity"]'))resumeRequestStart();else{capacityReturn=null;form=null;context=null;render();}}
       else if(action==='add-account')openForm(action,null,b);else if(['rename-account','seat-request','renew-request'].includes(action)){const account=ownAccount(id);if(!account)throw new ApiError('not_found','حساب پیدا نشد.');if(account.locked&&action!=='rename-account')throw new ApiError('account_locked','این حساب در حال رسیدگی است؛ پس از پایان عملیات درخواست تازه ثبت کنید.');openForm(action,account,b);}
       else if(action==='cancel-request'){const request=data.request||(data.requests||[]).find(r=>r.id===Number(id));if(!request||request.status!=='pending')throw new ApiError('conflict','درخواست دیگر در انتظار بررسی نیست.');await send({route:'/requests/cancel',body:{request_id:request.id}});}
       else if(action==='add-user')openForm(action,null,b);else if(action==='edit-user')openForm(action,data.users.find(u=>u.id===Number(id)),b);else if(action==='add-department')openForm('department',null,b);else if(action==='edit-department')openForm('department',data.departments.find(d=>d.id===Number(id)),b);

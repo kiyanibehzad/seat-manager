@@ -8,11 +8,12 @@ final class AccessGroups
     public const CATALOG=[
         'dashboard.read'=>['label'=>'کارهای روزانه','requires'=>['seats.manage']],
         'seats.manage'=>['label'=>'مدیریت سیت‌ها و درخواست‌ها','requires'=>[]],
+        'capacity.manage'=>['label'=>'ثبت و تغییر ظرفیت خریداری‌شده','requires'=>['seats.manage']],
         'registrations.review'=>['label'=>'تأیید و رد ثبت‌نام','requires'=>[]],
         'people.manage'=>['label'=>'مدیریت افراد','requires'=>[]],
         'departments.manage'=>['label'=>'مدیریت بخش‌ها و امتیازها','requires'=>['people.manage']],
     ];
-    public const CHIEF=['finance.read','capacity.manage','settings.manage','roles.manage','access_groups.manage'];
+    public const CHIEF=['finance.read','settings.manage','roles.manage','access_groups.manage'];
     private ?bool $schemaReady=null;
     public function __construct(private App $app) {}
     public function ready(): bool
